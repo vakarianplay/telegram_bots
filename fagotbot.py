@@ -43,8 +43,7 @@ class P_schedule():
             bot.send_photo(user, random.choice(foo));
 
 
-bot = telebot.TeleBot("1096148199:AAHIMdQ-HeWUOlbLmOj0ggYTPR6DQlASnJQ")
-DIR = 'pic'
+bot = telebot.TeleBot("TOKEN")
 
 #start command
 @bot.message_handler(commands=['start'])
