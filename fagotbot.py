@@ -15,7 +15,7 @@ foo = ['https://sun9-39.userapi.com/oW_Pcfu4zAfQquuJDLXmReHhE7d_SsT5vzOWZA/-QDux
 joinedFile = open("join", "r")
 joinedUsers = set ()
 for line in joinedFile:
-	joinedUsers.add(line.strip())
+        joinedUsers.add(line.strip())
 joinedFile.close()
 
 #start Process
@@ -27,7 +27,7 @@ class P_schedule():
     def start_schedule():
         #schedule settings
         schedule.every().day.at("11:02").do(P_schedule.send_message1)
-        schedule.every().day.at("15:31").do(P_schedule.send_message1)
+        schedule.every().day.at("15:31").do(P_schedule.send_message2)
 
         while True:
             schedule.run_pending()
@@ -36,14 +36,23 @@ class P_schedule():
     #scheduled messages
     def send_message1():
         for user in joinedUsers:
-            bot.send_message(message.chat.id, "Ты пидорас, {0.first_name}!\n<b>{1.first_name}bot</b> всегда напомнит тебе кто ты.".format(message.from_user, bot.get_me()), parse_mode='html')
+            try:
+                bot.send_message(user, "Ты пидорас!\n@youarefagotbot всегда тебе напомнит кто ты.")
+            except:
+                pass
+
 
     def send_message2():
         for user in joinedUsers:
-            bot.send_photo(user, random.choice(foo));
+            try:
+                bot.send_photo(user, random.choice(foo));
+            except:
+                pass
+
 
 
 bot = telebot.TeleBot("TOKEN")
+
 
 #start command
 @bot.message_handler(commands=['start'])
@@ -91,4 +100,4 @@ if __name__ == '__main__':
     try:
         bot.polling(none_stop=True)
     except:
-        pass
+        time.sleep(10)
