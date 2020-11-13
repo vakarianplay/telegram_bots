@@ -1,3 +1,5 @@
+![image](https://img.shields.io/badge/version-python%203.7-blue) ![image](https://img.shields.io/badge/pip%20install-telebot-blue) ![image](https://img.shields.io/badge/pip%20install-pyTelegramBotAPI-blue) 
+
 # fagotbot.py
 >Bot for send random picture via button and with schedule.
 
