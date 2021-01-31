@@ -20,7 +20,8 @@ text_model = markovify.Text(text)
 
 #with open('mark.txt') as f:
     #my_list = [x.strip() for x in f]
-bot = telebot.TeleBot("APITOKEN")
+        
+bot = telebot.TeleBot("1599392796:AAHOI_MTZPxnSCdMLWzmKoK61XExIWBsoB8")
 
 #start command
 @bot.message_handler(commands=['start'])
@@ -29,7 +30,7 @@ def welcome(message):
 
     keyboard = types.ReplyKeyboardMarkup(one_time_keyboard=True, resize_keyboard=True)
     keyboard.add(*[types.KeyboardButton(name) for name in['Рандомный нейроShit']])
-    keyboard.add(*[types.KeyboardButton(name) for name in['feedback']])
+    keyboard.add(*[types.KeyboardButton(name) for name in['О боте']])
     bot.send_message(message.chat.id, '↓ выбери дальнейшее действие ↓', reply_markup=keyboard, parse_mode="Html")
 
     if not str(message.chat.id) in joinedUsers:
@@ -44,8 +45,9 @@ def inl(message):
         if message.text == "Рандомный нейроShit":
             #bot.send_message(message.chat.id, random.choice(my_list));
             bot.send_message(message.chat.id, text_model.make_sentence())
-        elif message.text == "feedback":
-            bot.send_message(message.chat.id, "https://vakarian.website\nhttps://github.com/vakarianplay")
+        elif message.text == "О боте":
+            bot.send_message(message.chat.id, "Бот работает на цепях Маркова и генерирует случайную фразу из военного устава, отзывов и цитат из пабликов.\nСайт автора: https://vakarian.website\nGitHub: https://github.com/vakarianplay")
+            bot.send_message(message.chat.id, 'Смотрите также:\n@youarefagotbot - бот напомнит кто ты по жизни\n@batushkin - нейроправославный канал')
         else:
             bot.send_message(message.chat.id, 'Дон`т андерстенд')
 
