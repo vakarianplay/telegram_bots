@@ -54,7 +54,7 @@ def inl(message):
 
 
 
-# RUN
+# bot.polling
 if __name__ == '__main__':
     while True:
         try:
