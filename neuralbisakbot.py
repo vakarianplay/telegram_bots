@@ -20,7 +20,7 @@ text_model = markovify.Text(text)
 
 #with open('mark.txt') as f:
     #my_list = [x.strip() for x in f]
-bot = telebot.TeleBot("1599392796:AAHOI_MTZPxnSCdMLWzmKoK61XExIWBsoB8")
+bot = telebot.TeleBot("APITOKEN")
 
 #start command
 @bot.message_handler(commands=['start'])
