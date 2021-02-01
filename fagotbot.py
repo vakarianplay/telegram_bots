@@ -11,14 +11,14 @@ from multiprocessing import *
 #pics for send
 foo = ['https://sun9-39.userapi.com/oW_Pcfu4zAfQquuJDLXmReHhE7d_SsT5vzOWZA/-QDuxdEPJ54.jpg', 'https://sun9-31.userapi.com/YplfFCyTJb7ILAd0W-nGq8RlVwx5GYyscRyDcg/E1k5d8P_Xpg.jpg', 'https://sun9-26.userapi.com/N6cUOLmFegIq-RWPdMZnePfwO1CcPlL6qUUKjg/EiTCrhwGXyU.jpg', 'https://sun9-61.userapi.com/H3GLPSAvpuS0Umhx1IhF1VMYYnPmXCr_Rmm1tg/wDlCisnAEk0.jpg', 'https://sun9-33.userapi.com/lH_-Dzs1oW5lELSrcz2uTK1foweqqlYhu9y2EA/9FMC87LoduQ.jpg', 'https://sun9-59.userapi.com/2-As9DYGwWB3g9oh_rAGebvxWf4vd8JpDtMGJQ/L-LHOSW_xYE.jpg', 'https://sun9-69.userapi.com/jt2Q5BPu7OyUaEwMNxx5MsOQ3MFMdaP5y6iRoQ/HPKvIQn9bac.jpg', 'https://sun9-49.userapi.com/d30e75FrBpGD4wTJpvbIOzyudKwf9S8uPVuC7Q/ft2BxaqBFnc.jpg']
 
-#open base of id and create set
+#open base of users id and create set
 joinedFile = open("join", "r")
 joinedUsers = set ()
 for line in joinedFile:
         joinedUsers.add(line.strip())
 joinedFile.close()
 
-#start Process
+#start schedule process
 def start_process():
     p1 = Process(target=P_schedule.start_schedule, args=()).start()
 
