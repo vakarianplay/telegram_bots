@@ -2,16 +2,23 @@ from subprocess import check_output
 import telebot
 import time
 
-bot = telebot.TeleBot("BOT_API") #tokenapi
-user_id = 0 #id
+#tokenapi
+bot = telebot.TeleBot("BOT_API") 
+#telegram user if
+user_id = 0 
 @bot.message_handler(content_types=["text"])
 def main(message):
-   if (user_id == message.chat.id): #check id
+   #check id
+   if (user_id == message.chat.id):
       comand = message.text  
-      try: #if no command - check_output exception
+      #if no command - check_output exception
+      try: 
          bot.send_message(message.chat.id, check_output(comand, shell = True))
       except:
-         bot.send_message(message.chat.id, "Invalid input") #incorrect
+         #incorrect command
+         bot.send_message(message.chat.id, "Invalid input") 
+         
+#bot.polling         
 if __name__ == '__main__':
     while True:
         try: 
