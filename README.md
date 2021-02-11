@@ -1,4 +1,13 @@
-![image](https://img.shields.io/badge/version-python%203.7-blue) ![image](https://img.shields.io/badge/pip%20install-telebot-blue) ![image](https://img.shields.io/badge/pip%20install-pyTelegramBotAPI-blue) 
+![image](https://img.shields.io/badge/version-python%203.7-blue) ![image](https://img.shields.io/badge/pip%20install-telebot-blue) ![image](https://img.shields.io/badge/pip%20install-pyTelegramBotAPI-blue) ![image](https://img.shields.io/badge/pip%20install-markofy-blue)
+
+# neuralbisak.py
+>Bot for send random phrase from dataset. Bot using markov's chains and markofy lib.
+
+>File "join" using as data base of users who run bot.
+
+>Don't remember connect your dataset file for running bot. Please chek encoding in your dataset
+
+-------
 
 # fagotbot.py
 >Bot for send random picture via button and with schedule.
