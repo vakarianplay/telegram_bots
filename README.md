@@ -11,6 +11,7 @@ pip install markofy
 >File "users" using as data base of users who run bot.
 
 >Don't remember connect your dataset file for running bot. Please chek encoding in your dataset
+
 ![image](https://specialbotdata.000webhostapp.com/pic_git/neuralbisak.png)
 
 -------
@@ -24,6 +25,7 @@ pip install schedule
 ```
 
 >File "join" using as data base of users who run bot.
+
 ![image](https://specialbotdata.000webhostapp.com/pic_git/fagotbot.png)
 
 -------
