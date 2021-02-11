@@ -31,6 +31,11 @@ pip install schedule
 # sshtgbot.py
 >Run on linux machine. Using for remote administation and monitoring. Don't work with dynamic commands.
 
+requirements:
+```
+pip install subprocess
+```
+
 ![image](https://specialbotdata.000webhostapp.com/pic_git/sshbot.png)
 
 ------
