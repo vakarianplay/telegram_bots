@@ -12,7 +12,19 @@ pip install markofy
 
 >Don't remember connect your dataset file for running bot. Please chek encoding in your dataset
 
-![image](https://specialbotdata.000webhostapp.com/pic_git/neuralbisak.png)
+![image](https://vakarian.website/readmepic/bisakbot.jpg)
+
+-------
+
+# sshtgbot.py
+>Run on linux machine. Using for remote administation and monitoring. Don't work with dynamic commands.
+
+requirements:
+```
+pip install subprocess
+```
+
+![image](https://vakarian.website/readmepic/sshbot.jpg)
 
 -------
 
@@ -26,19 +38,6 @@ pip install schedule
 
 >File "join" using as data base of users who run bot.
 
-![image](https://specialbotdata.000webhostapp.com/pic_git/fagotbot.png)
-
--------
-
-# sshtgbot.py
->Run on linux machine. Using for remote administation and monitoring. Don't work with dynamic commands.
-
-requirements:
-```
-pip install subprocess
-```
-
-![image](https://specialbotdata.000webhostapp.com/pic_git/sshbot.png)
 
 ------
 # manager.py
