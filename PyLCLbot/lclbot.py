@@ -35,24 +35,36 @@ class LCLBot:
 
         @self.bot.message_handler(commands=['whoami'])
         def handleMsg(message):
+            logging.info("Whoami command")
             self.bot.send_message(message.chat.id, "<b>Ты пидорас, {0.first_name}!</b>".format(message.from_user), parse_mode='html')
 
         @self.bot.message_handler(commands=['whois'])
         def handleMsg(message):
-            try:
+            logging.info("Whois command")
+            if len(message.text.split()) == 2:
                 username = message.text.split(' ')[1][0:]
-                # print (username, message.chat.id, message.from_user.id)
-                # print (self.bot.get_chat_member('kostyavakarian', message.chat.id))
-                # print(self.bot.get_chat(message.chat.id))
-                # user_info = self.bot.get_chat_member(message.chat.id, username)
-                # print(user_info)
-                # user_info = self.bot.get_chat_member(message.chat.id, username).user
-                # print(user_info)
                 perc = random.randint(12, 150)
                 self.bot.reply_to(message, f"<b>{username}</b> пидорас на {perc}%", parse_mode='html')
-            except IndexError:
-                self.bot.reply_to(message, "Ошибка в команде.")
+            else:
+                self.bot.reply_to(message, "Ты долбоеб!\nПравильная команда выглядит так /whois @username\nЗапоминай!")
 
+        @self.bot.message_handler(commands=['fight'])
+        def fight(message):
+            logging.info("Fight command")
+            if len(message.text.split()) == 2:
+                sender_username = message.from_user.username
+                opponent_username = message.text.split()[1][0:]
+                opponent_username_split = message.text.split()[1][1:]
+                
+
+                if opponent_username_split == sender_username:
+                    self.bot.reply_to(message, "ТЫ ЧЕ, ДОЛБОЕБ?\nНахуй ты так делаешь?")
+                else: 
+                    winner = random.choice([sender_username, opponent_username])
+                    self.bot.send_message(message.chat.id, f"🥊 БОЙ МЕЖДУ @{sender_username} и {opponent_username} 🥊")
+                    self.bot.send_message(message.chat.id, f"{winner} применил СЛАВЯНСКИЙ ЗАЖИМ ЯЙЦАМИ. ПОБЕДА! 🏆")
+            else:
+                self.bot.reply_to(message, "Ты долбоеб!\nПравильная команда выглядит так /fight @username\nЗапоминай!")
 
 
             
