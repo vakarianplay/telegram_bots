@@ -26,7 +26,8 @@ class BotProps:
     def __init__(self) -> None:
         pass
     def fightAssets(self):
-        fights = ["СЛАВЯНСКИЙ ЗАЖИМ ЯЙЦАМИ", "СЛАВЯНСКИЙ ЗАЖИМ ЛЯЖКАМИ", "расстрел ЧВК Творожок", "газовую атаку подмыхой", "прострел сундука", "травматический ядерный бабах"]
+        fights = ["СЛАВЯНСКИЙ ЗАЖИМ ЯЙЦАМИ", "СЛАВЯНСКИЙ ЗАЖИМ ЛЯЖКАМИ", "расстрел ЧВК Творожок", "газовую атаку подмыхой", "прострел сундука", 
+                  "травматический ЯДЕРНЫЙ бабах", "добивание выживших", "НЕБЕСНЫЙ КАМШОТ", "АТАКУ ДРОЧЕСЛАВА"]
         return random.choice(fights)
     
     def boobsSize(self):
@@ -36,6 +37,14 @@ class BotProps:
     def ballsMass(self):
         mass = random.randint(50, 1488)
         return str(mass) + " грамм"
+    
+    def fixUsername(self, message):
+        if message.from_user.username == None:
+            username = message.from_user.first_name
+        else:
+            username = message.from_user.username
+        return username
+        
 
 class LCLBot:
     def __init__(self, token):
@@ -76,11 +85,11 @@ class LCLBot:
         def fight(message):
             logging.info("Fight command")
             if len(message.text.split()) == 2:
-                sender_username = message.from_user.username
+                sender_username = self.props.fixUsername(message)
+                
                 opponent_username = message.text.split()[1][0:]
                 opponent_username_split = message.text.split()[1][1:]
                 
-
                 if opponent_username_split == sender_username:
                     self.bot.reply_to(message, "ТЫ ЧЕ, ДОЛБОЕБ?\nНахуй ты так делаешь?")
                 else: 
@@ -93,7 +102,7 @@ class LCLBot:
 
         @self.bot.message_handler(commands=['boobsmetr'])
         def handleMsg(message):
-            logging.info("Boobs command")
+            logging.info("Boobs command") 
             self.bot.reply_to(message, f"<b>{message.from_user.first_name}</b>, твои бубсы <u>{self.props.boobsSize()} размера!</u>", parse_mode='html')
 
         @self.bot.message_handler(commands=['ballsmetr'])
