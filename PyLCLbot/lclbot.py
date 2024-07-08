@@ -3,9 +3,10 @@ import csv
 import logging
 import random
 import time
+import statprocessor
 
 class UsersList:
-    def __init__(self, filename='/home/glab/LCLbot/users.csv'):
+    def __init__(self, filename='/home/kias-x/PyLCLbot/users.csv'):
         self.filename = filename
 
     def isUserExists(self, user_id):
@@ -78,6 +79,7 @@ class LCLBot:
         self.bot = telebot.TeleBot(token)
         self.users_list = UsersList()
         self.props = BotProps()
+        self.statistic = statprocessor.StatisticCSV()
 
     def commands(self):
         @self.bot.message_handler(commands=['start'])
@@ -127,6 +129,12 @@ class LCLBot:
                     self.bot.reply_to(message, "ТЫ ЧЕ, ДОЛБОЕБ?\nНахуй ты так делаешь?")
                 else: 
                     winner = random.choice([sender_username, opponent_username])
+                    
+                    if winner == sender_username:
+                        self.statistic.statRec(sender_username, opponent_username_split)
+                    else:
+                        self.statistic.statRec(opponent_username_split, sender_username)
+                    
                     punch = self.props.fightAssets()
                     self.bot.send_message(message.chat.id, f"🥊 <b>БОЙ МЕЖДУ</b> 🥊\n🥊 <i>@{sender_username} и {opponent_username}</i> 🥊", parse_mode='html')
                     self.bot.send_message(message.chat.id, f"{winner} применил \n\n<b><u>{punch}</u></b>\n\n\n🏆 <b>ПОБЕДА!</b> 🏆", parse_mode='html')
@@ -160,7 +168,7 @@ class LCLBot:
 if __name__ == "__main__":
     TOKEN = "APITOKEN"
     logging.basicConfig(level=logging.INFO)
-
+    
     bot_instance = LCLBot(TOKEN)
     bot_instance.commands()
     bot_instance.run()
