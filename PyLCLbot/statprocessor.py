@@ -37,7 +37,12 @@ class StatisticCSV:
         logging.info("Add record" + str(data))
         
     def getStatUser(self, username):
-        pass
+        with open(self.filename, 'r', newline='') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                if row[0] == username:
+                    return str(row[1]), str(row[2])
+            return None
     
         
 def init():
@@ -45,5 +50,3 @@ def init():
 
 if __name__ == "__main__":
     print ("it is class")
-
-
