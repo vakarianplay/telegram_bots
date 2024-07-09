@@ -91,7 +91,7 @@ class LCLBot:
         def handleStart(message):
             firstLine = "/help - эта справка\n\n/whoami - узнать кто я\n\n"
             secondLine = "/whois @username - узнать кто такой @username (вводить через проблел)\n\n/fight @username - устроить бой с @username (вводить через пробел)\n\n"
-            thirdLine = "/toxic - Узнать уровень токсичности @username\n\n/boobsmetr - узнать размер бубсов\n\n/ballsmetr - узнать массу яиц"
+            thirdLine = "/toxic - Узнать уровень токсичности @username\n\n/boobsmetr - узнать размер бубсов\n\n/ballsmetr - узнать массу яиц\n\n/getstat - узнать боевую статистику"
             self.bot.send_message(message.chat.id, firstLine + secondLine + thirdLine, parse_mode='html')
             
         @self.bot.message_handler(commands=['ping'])
