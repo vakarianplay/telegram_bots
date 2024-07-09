@@ -160,10 +160,17 @@ class LCLBot:
                 self.bot.reply_to(message, toxicAns, parse_mode='html')
             else:
                 self.bot.reply_to(message, "Ты долбоеб!\nПравильная команда выглядит так \n/toxic @username\nЗапоминай!")
+                
+        @self.bot.message_handler(commands=['getstat'])
+        def handleMsg(message):
+            statUser = self.statistic.getStatUser(self.props.fixUsername(message))
+            logging.info("GetStatistic " + statUser[0] + "   " + statUser[1])
+            self.bot.reply_to(message, f"<b>{message.from_user.first_name}</b>\n<b>у тебя {statUser[0]} побед и {statUser[1]} поражений!</b>", parse_mode='html')
     
     def run(self):
         logging.info("Bot started!")
         self.bot.polling(none_stop=True)
+
 
 if __name__ == "__main__":
     TOKEN = "APITOKEN"
