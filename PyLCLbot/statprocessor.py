@@ -44,9 +44,5 @@ class StatisticCSV:
                     return str(row[1]), str(row[2])
             return None
     
-        
-def init():
-    stobj = StatisticCSV()
-
 if __name__ == "__main__":
     print ("it is class")
