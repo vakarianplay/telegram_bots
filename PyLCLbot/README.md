@@ -6,7 +6,9 @@
 
 Bot for groupchats
 
--------------
+## Try It [@youarefagotbot](https://t.me/youarefagotbot)
+
+------------
 
 #### Features:
 
