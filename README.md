@@ -10,7 +10,7 @@ pip install markofy
 
 >File "users" using as data base of users who run bot.
 
->Don't remember connect your dataset file for running bot. Please chek encoding in your dataset
+>Don't forget connect your dataset file for running bot. Please chek encoding in your dataset
 
 ![image](https://vakarian.website/readmepic/bisakbot.jpg)
 
@@ -29,6 +29,11 @@ pip install subprocess
 -------
 
 # fagotbot.py
+
+### New version with groupchats feauteres
+### [PyLCLBot](https://github.com/vakarianplay/telegram_bots/tree/main/PyLCLbot)
+
+
 >Bot for send random picture via button and with schedule.
 
 requirements:
@@ -37,6 +42,7 @@ pip install schedule
 ```
 
 >File "join" using as data base of users who run bot.
+
 
 
 ------
