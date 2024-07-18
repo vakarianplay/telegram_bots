@@ -3,6 +3,7 @@ import csv
 import logging
 import random
 import time
+import re
 import statprocessor
 
 class UsersList:
@@ -65,6 +66,17 @@ class BotProps:
             username = message.from_user.username
         return username
     
+    def extractUsername(self, command):
+        username_pattern = r'@[\w]+'
+        firstname_pattern = r'/fight\s+([\w\s]+)'
+        match = re.search(username_pattern, command)
+        if match:
+            return match.group()
+        match = re.search(firstname_pattern, command)
+        if match:
+            return match.group(1).strip()
+        return None
+    
     def pingProcessor(self):
         start_time = time.time()
         curTime = time.strftime('%H:%M:%S', time.localtime())
@@ -119,21 +131,30 @@ class LCLBot:
         @self.bot.message_handler(commands=['fight'])
         def fight(message):
             logging.info("Fight command")
-            if len(message.text.split()) == 2:
+            if len(message.text.split()) >= 2:
                 sender_username = self.props.fixUsername(message)
                 
-                opponent_username = message.text.split()[1][0:]
+                opponent_username = str(message.text.split()[1])
                 opponent_username_split = message.text.split()[1][1:]
+                print (sender_username, opponent_username, opponent_username_split)
+                print (self.props.extractUsername(message.text))
                 
                 if opponent_username_split == sender_username:
                     self.bot.reply_to(message, "ТЫ ЧЕ, ДОЛБОЕБ?\nНахуй ты так делаешь?")
-                else: 
-                    winner = random.choice([sender_username, opponent_username])
                     
-                    if winner == sender_username:
-                        self.statistic.statRec(sender_username, opponent_username_split)
-                    else:
-                        self.statistic.statRec(opponent_username_split, sender_username)
+                else:
+                    if sender_username == "elya_jpg":
+                        winner = opponent_username
+                    elif opponent_username_split == "elya_jpg":
+                        winner = sender_username
+                        
+                    else: 
+                        winner = random.choice([sender_username, opponent_username])
+                    
+                        #if winner == sender_username:
+                            #self.statistic.statRec(sender_username, opponent_username_split)
+                        #else:
+                            #self.statistic.statRec(opponent_username_split, sender_username)
                     
                     punch = self.props.fightAssets()
                     self.bot.send_message(message.chat.id, f"🥊 <b>БОЙ МЕЖДУ</b> 🥊\n🥊 <i>@{sender_username} и {opponent_username}</i> 🥊", parse_mode='html')
