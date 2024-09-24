@@ -42,6 +42,7 @@ class StatisticCSV:
             for row in reader:
                 if row[0] == username:
                     return str(row[1]), str(row[2])
+                #make else return
             return None
     
 if __name__ == "__main__":
