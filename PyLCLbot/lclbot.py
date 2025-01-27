@@ -36,9 +36,9 @@ class BotProps:
         pass
         
     def fightAssets(self):
-        fights = ["СЛАВЯНСКИЙ ЗАЖИМ ЯЙЦАМИ", "СЛАВЯНСКИЙ ЗАЖИМ ЛЯЖКАМИ", "расстрел ЧВК Творожок", "газовую атаку подмыхой", "прострел сундука", 
-                  "травматический ЯДЕРНЫЙ бабах", "добивание выживших", "НЕБЕСНЫЙ КАМШОТ", "АТАКУ ДРОЧЕСЛАВА", "установку на понос", "СЛАВЯНСКИЙ УДАР ЗАЛУПОЙ", 
-                  "АТАКУ ПОДНЕБЕСНОГО", "инцелшот", "слонярскую базу", "тапание хомяка", "пробитие хомяка", "пердолинг курва бобером"]
+        with open('fights.txt', 'r') as file:
+            fights = [fight.strip() for fight in file.read().split(',')]
+            print (fights)
         return random.choice(fights)
     
     def boobsSize(self):
@@ -195,9 +195,8 @@ class LCLBot:
         logging.info("Bot started!")
         self.bot.polling(none_stop=True)
 
-
 if __name__ == "__main__":
-    TOKEN = "APITOKEN"
+    TOKEN = "1096148199:AAHIMdQ-HeWUOlbLmOj0ggYTPR6DQlASnJQ"
     logging.basicConfig(level=logging.INFO)
     
     bot_instance = LCLBot(TOKEN)
