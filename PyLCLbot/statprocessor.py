@@ -14,6 +14,7 @@ class StatisticCSV:
             data = list(reader)
 
         participants = [winner, loser]
+        print (participants)
         for participant in participants:
             found = False
             for row in data:
@@ -29,6 +30,7 @@ class StatisticCSV:
                     data.append([participant, '1', '0'])  
                 else:
                     data.append([participant, '0', '1'])
+                    
         
         with open(self.filename, 'w', newline='') as file:
             writer = csv.writer(file)
@@ -42,8 +44,13 @@ class StatisticCSV:
             for row in reader:
                 if row[0] == username:
                     return str(row[1]), str(row[2])
-                #make else return
             return None
     
+        
+def init():
+    stobj = StatisticCSV()
+
 if __name__ == "__main__":
     print ("it is class")
+
+
