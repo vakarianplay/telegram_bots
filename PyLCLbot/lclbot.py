@@ -188,8 +188,14 @@ class LCLBot:
         @self.bot.message_handler(commands=['getstat'])
         def handleMsg(message):
             statUser = self.statistic.getStatUser(self.props.fixUsername(message))
-            logging.info("GetStatistic " + statUser[0] + "   " + statUser[1])
-            self.bot.reply_to(message, f"<b>{message.from_user.first_name}</b>\n<b>у тебя {statUser[0]} побед и {statUser[1]} поражений!</b>", parse_mode='html')
+            
+            if statUser is None:
+                logging.info("No stat ")
+                self.bot.send_message(message.chat.id, "У тебя нет боевой статистики!")
+                # self.bot.reply_to(message, f"<b>{message.from_user.first_name}</b>\n<b>у тебя нет статистики!", parse_mode='html')
+            else:
+                logging.info("GetStatistic " + statUser[0] + "   " + statUser[1])
+                self.bot.reply_to(message, f"<b>{message.from_user.first_name}</b>\n<b>у тебя {statUser[0]} побед и {statUser[1]} поражений!</b>", parse_mode='html')
     
     def run(self):
         logging.info("Bot started!")
