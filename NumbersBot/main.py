@@ -38,6 +38,16 @@ class BotInstance:
 
             with open(file_path, "rb") as file:
                 self.bot.send_document(message.chat.id, file, caption="Выгрузка БД")
+                
+        @self.bot.message_handler(commands=['countrecors'])
+        def countRecords(message):
+            self.bot.reply_to(message, "Количество записей в БД\n<b>" + str(dbO.countRecords())+ "</b>", parse_mode='html')
+            
+        @self.bot.message_handler(commands=['help'])
+        def handleHelp(message):
+            firstLine = "/help - эта справка\n\n/getrecords - получить содержимое базы в txt файле\n\n"
+            secondLine = "/countrecors - количество записей в базе"
+            self.bot.send_message(message.chat.id, firstLine + secondLine, parse_mode='html')
             
         @self.bot.message_handler(func=lambda message: True)
         def handle_message(message):
@@ -54,7 +64,6 @@ class BotInstance:
                 self.bot.reply_to(message, "Неверный формат записи. Правильная форма телефон - номер")
             
 
-            
     def createUser(self, username, tg_id):
         dbO.addUser(str(username), str(tg_id))
         

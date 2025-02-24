@@ -68,6 +68,12 @@ class DBObject:
         self.dbQuery.execute(queryGet)
         rows = self.dbQuery.fetchall()
         return rows
+    
+    def countRecords(self):
+        countQuery = "SELECT COUNT(*) FROM numbers;"
+        self.dbQuery.execute(countQuery)
+        result = self.dbQuery.fetchone()[0]
+        return result
         
         
         
