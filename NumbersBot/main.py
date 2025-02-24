@@ -4,14 +4,10 @@ from sqlprocessor import DBObject
 import re
 
 
-
-
-
 class BotInstance:
     def __init__(self, token):
         self.bot = telebot.TeleBot(token)
 
-        
     def run(self):
         logging.info("Bot started!")
         self.bot.polling(none_stop=True)
@@ -51,7 +47,6 @@ class BotInstance:
             
         @self.bot.message_handler(func=lambda message: True)
         def handle_message(message):
-        # Проверка формата "номер телефона - имя"
             pattern = r"^(\+?\d{10,15})\s*-\s*(.+)$" 
             match = re.match(pattern, message.text)
 
@@ -70,19 +65,9 @@ class BotInstance:
     def addRecord(self, phone, name, tg_id):
         dbO.addNumber(str(phone), str(name), str(tg_id))
         
-        
-            
-
-
-
-
-
-
-
-
 
 if __name__ == "__main__":
-    TOKEN = "1933129297:AAFtgv9LaOgDbT6fUKnIbd1rBsVCrIA_k2o"
+    TOKEN = "BOT_API"
     logging.basicConfig(level=logging.INFO)
     dbO = DBObject("base.db")
     
