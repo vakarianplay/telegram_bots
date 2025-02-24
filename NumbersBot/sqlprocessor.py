@@ -63,6 +63,13 @@ class DBObject:
         self.db.commit()
         logging.info(f"Add rec {phone}, {caption}")
         
+    def getRecords(self):
+        queryGet = "SELECT phone, caption FROM numbers;"
+        self.dbQuery.execute(queryGet)
+        rows = self.dbQuery.fetchall()
+        return rows
+        
+        
         
 
 

@@ -22,6 +22,23 @@ class BotInstance:
             self.bot.send_message(message.chat.id, "<b>Пришли мне номер спамера в формате</b>\n\n<i>+7XXXXXXXXXX - КТО_ТАКОЙ</i>\nИ я его добавлю в базу".format(message.from_user), parse_mode='html')
             self.createUser(message.chat.username, message.chat.id)
             
+        @self.bot.message_handler(commands=['getrecords'])
+        def sendRecords(message):
+            records = dbO.getRecords()
+
+            if not records:
+                self.bot.reply_to(message, "БД пустая.")
+                return
+
+            file_path = "records.txt"
+
+            with open(file_path, "w", encoding="utf-8") as file:
+                for phone, caption in records:
+                    file.write(f"{phone} - {caption}\n")
+
+            with open(file_path, "rb") as file:
+                self.bot.send_document(message.chat.id, file, caption="Выгрузка БД")
+            
         @self.bot.message_handler(func=lambda message: True)
         def handle_message(message):
         # Проверка формата "номер телефона - имя"
