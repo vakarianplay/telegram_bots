@@ -3,11 +3,11 @@ import logging
 from sqlprocessor import DBObject
 import re
 
-
 class BotInstance:
     def __init__(self, token):
         self.bot = telebot.TeleBot(token)
 
+        
     def run(self):
         logging.info("Bot started!")
         self.bot.polling(none_stop=True)
@@ -15,7 +15,7 @@ class BotInstance:
     def commands(self):
         @self.bot.message_handler(commands=['start'])
         def handleStart(message):
-            self.bot.send_message(message.chat.id, "<b>Пришли мне номер спамера в формате</b>\n\n<i>+7XXXXXXXXXX - КТО_ТАКОЙ</i>\nИ я его добавлю в базу".format(message.from_user), parse_mode='html')
+            self.bot.send_message(message.chat.id, "<b>Пришли мне номер спамера в формате</b>\n\n<i>+7XXXXXXXXXX - КТО_ТАКОЙ</i>\nИ я его добавлю в базу\n\n <i>/help - показать справку</i>".format(message.from_user), parse_mode='html')
             self.createUser(message.chat.username, message.chat.id)
             
         @self.bot.message_handler(commands=['getrecords'])
@@ -47,6 +47,7 @@ class BotInstance:
             
         @self.bot.message_handler(func=lambda message: True)
         def handle_message(message):
+        # Проверка формата "номер телефона - имя"
             pattern = r"^(\+?\d{10,15})\s*-\s*(.+)$" 
             match = re.match(pattern, message.text)
 
@@ -65,9 +66,9 @@ class BotInstance:
     def addRecord(self, phone, name, tg_id):
         dbO.addNumber(str(phone), str(name), str(tg_id))
         
-
+        
 if __name__ == "__main__":
-    TOKEN = "BOT_API"
+    TOKEN = "7857301592:AAH6zZRmZeIVRdzLU7_C7hw9Rax3UpZR0DI"
     logging.basicConfig(level=logging.INFO)
     dbO = DBObject("base.db")
     
