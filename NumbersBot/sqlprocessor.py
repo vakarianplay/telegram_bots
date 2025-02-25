@@ -58,10 +58,18 @@ class DBObject:
             logging.info(f"User already exists: username={username}, tg_id={tg_id}")
             
     def addNumber(self, phone, caption, tg_id):
-        insertPhoneQuery = f"INSERT INTO numbers (phone, caption, tg_id) VALUES ('{phone}', '{caption}', {tg_id});"
-        self.dbQuery.execute(insertPhoneQuery)
-        self.db.commit()
-        logging.info(f"Add rec {phone}, {caption}")
+        queryExist = f"SELECT EXISTS(SELECT 1 FROM numbers WHERE phone = '{phone}');"
+        existResult = self.dbQuery.execute(queryExist).fetchone()[0] 
+        
+        if existResult:
+            insertPhoneQuery = f"INSERT INTO numbers (phone, caption, tg_id) VALUES ('{phone}', '{caption}', {tg_id});"
+            self.dbQuery.execute(insertPhoneQuery)
+            self.db.commit()
+            logging.info(f"Add rec {phone}, {caption}")
+        else:
+            logging.info(f"Number already exists: number = {phone}")
+            
+        return existResult
         
     def getRecords(self):
         queryGet = "SELECT phone, caption FROM numbers;"
