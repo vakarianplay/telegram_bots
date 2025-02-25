@@ -1,3 +1,4 @@
+from sqlalchemy import false
 import telebot
 import logging
 from sqlprocessor import DBObject
@@ -47,19 +48,44 @@ class BotInstance:
             
         @self.bot.message_handler(func=lambda message: True)
         def handle_message(message):
-            pattern = r"^(\+?\d{10,15})\s*-\s*(.+)$" 
-            match = re.match(pattern, message.text)
-
-            if match:
-                phone = match.group(1)  
-                name = match.group(2)   
-                if not self.addRecord(phone, name, message.chat.id):
+            # pattern = r"^(\+?\d{10,15})\s*-\s*(.+)$" 
+            # match = re.match(pattern, message.text)
+            # data = self.numParcer(message)
+            # if match:
+            #     phone = match.group(1)  
+            #     name = match.group(2)   
+            #     if not self.addRecord(phone, name, message.chat.id):
+            #         self.bot.reply_to(message, f"Запись добавлена\n{phone} - {name}")
+            #     else:
+            #         self.bot.reply_to(message,f"Запись с номером {phone} уже существует")
+            # else:
+            #     self.bot.reply_to(message, "Неверный формат записи. Правильная форма телефон - номер")
+            result = self.numParcer(message)
+            if result:
+                phone, name, valid = result
+                if valid:
                     self.bot.reply_to(message, f"Запись добавлена\n{phone} - {name}")
                 else:
                     self.bot.reply_to(message,f"Запись с номером {phone} уже существует")
             else:
                 self.bot.reply_to(message, "Неверный формат записи. Правильная форма телефон - номер")
             
+    def numParcer(self, message):
+        pattern = r"^(\+?\d{10,15})\s*-\s*(.+)$" 
+        match = re.match(pattern, message.text)
+        if match:
+            phone = match.group(1)  
+            name = match.group(2)
+            if not self.addRecord(phone, name, message.chat.id):
+                return phone, name, True
+            else:
+                return phone, name, False
+        else:
+            return None
+            
+            
+            # return (phone, name)        
+        
 
     def createUser(self, username, tg_id):
         dbO.addUser(str(username), str(tg_id))
@@ -70,7 +96,7 @@ class BotInstance:
         
         
 if __name__ == "__main__":
-    TOKEN = "TOKEN_API"
+    TOKEN = "1933129297:AAFtgv9LaOgDbT6fUKnIbd1rBsVCrIA_k2o"
     logging.basicConfig(level=logging.INFO)
     dbO = DBObject("base.db")
     
