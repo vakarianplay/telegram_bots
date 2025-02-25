@@ -47,15 +47,16 @@ class BotInstance:
             
         @self.bot.message_handler(func=lambda message: True)
         def handle_message(message):
-        # Проверка формата "номер телефона - имя"
             pattern = r"^(\+?\d{10,15})\s*-\s*(.+)$" 
             match = re.match(pattern, message.text)
 
             if match:
                 phone = match.group(1)  
                 name = match.group(2)   
-                self.addRecord(phone, name, message.chat.id)  
-                self.bot.reply_to(message, f"Запись добавлена\n{phone} - {name}")
+                if not self.addRecord(phone, name, message.chat.id):
+                    self.bot.reply_to(message, f"Запись добавлена\n{phone} - {name}")
+                else:
+                    self.bot.reply_to(message,f"Запись с номером {phone} уже существует")
             else:
                 self.bot.reply_to(message, "Неверный формат записи. Правильная форма телефон - номер")
             
@@ -64,11 +65,12 @@ class BotInstance:
         dbO.addUser(str(username), str(tg_id))
         
     def addRecord(self, phone, name, tg_id):
-        dbO.addNumber(str(phone), str(name), str(tg_id))
+        addResult = dbO.addNumber(str(phone), str(name), str(tg_id))
+        return  addResult
         
         
 if __name__ == "__main__":
-    TOKEN = "7857301592:AAH6zZRmZeIVRdzLU7_C7hw9Rax3UpZR0DI"
+    TOKEN = "TOKEN_API"
     logging.basicConfig(level=logging.INFO)
     dbO = DBObject("base.db")
     

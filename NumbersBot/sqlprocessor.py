@@ -61,7 +61,7 @@ class DBObject:
         queryExist = f"SELECT EXISTS(SELECT 1 FROM numbers WHERE phone = '{phone}');"
         existResult = self.dbQuery.execute(queryExist).fetchone()[0] 
         
-        if existResult:
+        if not existResult:
             insertPhoneQuery = f"INSERT INTO numbers (phone, caption, tg_id) VALUES ('{phone}', '{caption}', {tg_id});"
             self.dbQuery.execute(insertPhoneQuery)
             self.db.commit()
