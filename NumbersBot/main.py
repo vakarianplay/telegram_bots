@@ -48,19 +48,7 @@ class BotInstance:
             
         @self.bot.message_handler(func=lambda message: True)
         def handle_message(message):
-            # pattern = r"^(\+?\d{10,15})\s*-\s*(.+)$" 
-            # match = re.match(pattern, message.text)
-            # data = self.numParcer(message)
-            # if match:
-            #     phone = match.group(1)  
-            #     name = match.group(2)   
-            #     if not self.addRecord(phone, name, message.chat.id):
-            #         self.bot.reply_to(message, f"Запись добавлена\n{phone} - {name}")
-            #     else:
-            #         self.bot.reply_to(message,f"Запись с номером {phone} уже существует")
-            # else:
-            #     self.bot.reply_to(message, "Неверный формат записи. Правильная форма телефон - номер")
-            result = self.numParcer(message)
+            result = self.numParcer(message, message.text)
             if result:
                 phone, name, valid = result
                 if valid:
@@ -69,10 +57,28 @@ class BotInstance:
                     self.bot.reply_to(message,f"Запись с номером {phone} уже существует")
             else:
                 self.bot.reply_to(message, "Неверный формат записи. Правильная форма телефон - номер")
+                
+        @self.bot.message_handler(content_types=['document'])
+        def handle_document(message):
+            if message.document.mime_type == 'text/plain':
+                file_info = self.bot.get_file(message.document.file_id)
+                downloaded_file = self.bot.download_file(file_info.file_path) # type: ignore
+                text = downloaded_file.decode('utf-8')  
+                lines = text.splitlines()
+                validLineCounter = 0
+                for line in lines:
+                    result = self.numParcer(message, line)
+                    if result:
+                        phone, name, valid = result
+                        if valid:
+                            validLineCounter += 1
+                self.bot.reply_to(message, f"Всего строк получено - <b><i>{len(lines)}</i></b>\n\nВ базу добавлено <b><i>{validLineCounter}</i></b> записей", parse_mode='html')
+            else:
+                self.bot.reply_to(message, "Это не текстовый файл.")
             
-    def numParcer(self, message):
+    def numParcer(self, message, line):
         pattern = r"^(\+?\d{10,15})\s*-\s*(.+)$" 
-        match = re.match(pattern, message.text)
+        match = re.match(pattern, line)
         if match:
             phone = match.group(1)  
             name = match.group(2)
@@ -82,9 +88,7 @@ class BotInstance:
                 return phone, name, False
         else:
             return None
-            
-            
-            # return (phone, name)        
+     
         
 
     def createUser(self, username, tg_id):
