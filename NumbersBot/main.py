@@ -17,6 +17,7 @@ class BotInstance:
         @self.bot.message_handler(commands=['start'])
         def handleStart(message):
             self.bot.send_message(message.chat.id, "<b>Пришли мне номер спамера в формате</b>\n\n<i>+7XXXXXXXXXX - КТО_ТАКОЙ</i>\nИ я его добавлю в базу\n\n <i>/help - показать справку</i>".format(message.from_user), parse_mode='html')
+            self.bot.send_message(message.chat.id, "Номера можно добавить в виде <i>txt файла</i>\n\nФормат файла: <i>+7XXXXXXXXXX - КТО_ТАКОЙ</i>\n<b>Каждая запись с новой строки</b>".format(message.from_user), parse_mode='html')
             self.createUser(message.chat.username, message.chat.id)
             
         @self.bot.message_handler(commands=['getrecords'])
@@ -43,8 +44,9 @@ class BotInstance:
         @self.bot.message_handler(commands=['help'])
         def handleHelp(message):
             firstLine = "/help - эта справка\n\n/getrecords - получить содержимое базы в txt файле\n\n"
-            secondLine = "/countrecors - количество записей в базе"
-            self.bot.send_message(message.chat.id, firstLine + secondLine, parse_mode='html')
+            secondLine = "/countrecors - количество записей в базе\n\n"
+            thirdLine = "Номера можно добавить в виде <i>txt файла</i>\nФормат файла: <i>+7XXXXXXXXXX - КТО_ТАКОЙ</i>\n<b>Каждая запись с новой строки</b>"
+            self.bot.send_message(message.chat.id, firstLine + secondLine + thirdLine, parse_mode='html')
             
         @self.bot.message_handler(func=lambda message: True)
         def handle_message(message):
@@ -108,7 +110,7 @@ class BotInstance:
         
         
 if __name__ == "__main__":
-    TOKEN = "API_TOKEN"
+    TOKEN = "TOKEN_API"
     logging.basicConfig(level=logging.INFO)
     dbO = DBObject("base.db")
     
