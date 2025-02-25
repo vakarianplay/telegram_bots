@@ -63,18 +63,26 @@ class BotInstance:
             if message.document.mime_type == 'text/plain':
                 file_info = self.bot.get_file(message.document.file_id)
                 downloaded_file = self.bot.download_file(file_info.file_path) # type: ignore
-                text = downloaded_file.decode('utf-8')  
-                lines = text.splitlines()
-                validLineCounter = 0
-                for line in lines:
-                    result = self.numParcer(message, line)
-                    if result:
-                        phone, name, valid = result
-                        if valid:
-                            validLineCounter += 1
-                self.bot.reply_to(message, f"Всего строк получено - <b><i>{len(lines)}</i></b>\n\nВ базу добавлено <b><i>{validLineCounter}</i></b> записей", parse_mode='html')
+                try:
+                    text = downloaded_file.decode('utf-8')
+                    self.fileProcessor(message, text)
+                except:
+                    self.bot.reply_to(message, "Ошибка чтения файла")
+                
             else:
-                self.bot.reply_to(message, "Это не текстовый файл.")
+                self.bot.reply_to(message, "Это не текстовый файл")
+                
+    def fileProcessor(self, message, text):              
+        lines = text.splitlines()
+        validLineCounter = 0
+        for line in lines:
+            result = self.numParcer(message, line)
+            if result:
+                phone, name, valid = result
+                if valid:
+                    validLineCounter += 1
+        self.bot.reply_to(message, f"Всего строк получено - <b><i>{len(lines)}</i></b>\n\nВ базу добавлено <b><i>{validLineCounter}</i></b> записей", parse_mode='html')
+        
             
     def numParcer(self, message, line):
         pattern = r"^(\+?\d{10,15})\s*-\s*(.+)$" 
@@ -100,7 +108,7 @@ class BotInstance:
         
         
 if __name__ == "__main__":
-    TOKEN = "1933129297:AAFtgv9LaOgDbT6fUKnIbd1rBsVCrIA_k2o"
+    TOKEN = "API_TOKEN"
     logging.basicConfig(level=logging.INFO)
     dbO = DBObject("base.db")
     
