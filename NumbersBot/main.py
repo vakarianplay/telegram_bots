@@ -1,4 +1,3 @@
-from sqlalchemy import false
 import telebot
 import logging
 from sqlprocessor import DBObject
@@ -100,7 +99,6 @@ class BotInstance:
             return None
      
         
-
     def createUser(self, username, tg_id):
         dbO.addUser(str(username), str(tg_id))
         
@@ -113,7 +111,6 @@ if __name__ == "__main__":
     TOKEN = "TOKEN_API"
     logging.basicConfig(level=logging.INFO)
     dbO = DBObject("base.db")
-    
     bot_instance = BotInstance(TOKEN)
     bot_instance.commands()
     bot_instance.run()
