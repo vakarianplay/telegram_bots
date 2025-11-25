@@ -202,9 +202,10 @@ class LCLBot:
         self.bot.polling(none_stop=True)
 
 if __name__ == "__main__":
-    TOKEN = "1096148199:AAHIMdQ-HeWUOlbLmOj0ggYTPR6DQlASnJQ"
+    TOKEN = "API"
     logging.basicConfig(level=logging.INFO)
     
     bot_instance = LCLBot(TOKEN)
     bot_instance.commands()
     bot_instance.run()
+
