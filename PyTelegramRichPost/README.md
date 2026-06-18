@@ -30,6 +30,11 @@ JSON_PAYLOAD="$(
         end
     '
 )"
+      </code>
+</pre>
+
+<pre>
+  <code class="language-bash">
 curl -sS -X POST \
   -H "Content-Type: application/json" \
   -d "$JSON_PAYLOAD" \
