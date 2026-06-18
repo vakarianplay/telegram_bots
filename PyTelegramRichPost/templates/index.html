@@ -11,11 +11,15 @@ input[type=text], input[type=file] { padding: 0.5rem; font-size: 1rem; width: 10
 button { padding: 0.75rem; font-size: 1rem; cursor: pointer; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 .alert { padding: 0.75rem; border-radius: 6px; margin-top: 1rem; }
-.success { background: #e6f4ea; border: 1px solid #6cc178; }
-.error { background: #fdecea; border: 1px solid #f05b5b; white-space: pre-wrap; }
+.alert-title { font-weight: 600; margin-bottom: 0.15rem; }
+.alert-meta { font-size: 0.85rem; color: #4d4d4d; }
+.alert.success { background: #e6f4ea; border: 1px solid #6cc178; }
+.alert.error { background: #fdecea; border: 1px solid #f05b5b; white-space: pre-wrap; }
+.alert.success .alert-meta { color: #2d6a4f; }
+.alert.error .alert-meta { color: #7a2d2d; }
 .checkbox-inline { display: flex; align-items: center; gap: 0.5rem; }
 .info-card { display: flex; gap: 0.75rem; align-items: center; padding: 0.75rem; border: 1px solid #e0e0e0; border-radius: 8px; margin-top: 0.5rem; }
-.info-card img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #f2f2f2; }
+info-card img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #f2f2f2; }
 .info-card.hidden { display: none; }
 .info-card .meta { display: flex; flex-direction: column; }
 #status-row { font-size: 0.95rem; color: #555; min-height: 1.2rem; }

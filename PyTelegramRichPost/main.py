@@ -53,7 +53,7 @@ def fetch_bot_profile(token: str) -> dict:
     return {
         "name": result.get("first_name", ""),
         "username": result.get("username", ""),
-        "photo_url": None  # Bot API не возвращает фото
+        "photo_url": None
     }
 
 def fetch_chat_profile(token: str, chat_id: str) -> dict:
@@ -133,17 +133,18 @@ def render_template(message_block: str = "") -> bytes:
     return html.replace("{{message_block}}", message_block).encode("utf-8")
 
 class PublisherHandler(BaseHTTPRequestHandler):
-    server_version = "RichPublisher/2.1"
+    server_version = "RichPublisher/2.2"
 
     def do_GET(self):
         parsed = urlparse(self.path)
         if parsed.path != "/":
-            self.respond(404, render_template("<div class='alert error'>404</div>"))
+            self.respond(404, render_template("<div class='alert error'><div class='alert-title'>404</div></div>"))
             return
         params = parse_qs(parsed.query)
         status = params.get("status", [None])[0]
-        message = params.get("msg", [""])[0]
-        self.respond_with_form(status, message)
+        msg = params.get("msg", [""])[0]
+        detail = params.get("detail", [""])[0]
+        self.respond_with_form(status, msg, detail)
 
     def do_POST(self):
         if self.path == "/publish":
@@ -151,7 +152,7 @@ class PublisherHandler(BaseHTTPRequestHandler):
         elif self.path == "/api/check":
             self.handle_check()
         else:
-            self.respond(404, render_template("<div class='alert error'>404</div>"))
+            self.respond(404, render_template("<div class='alert error'><div class='alert-title'>404</div></div>"))
 
     def handle_check(self):
         try:
@@ -190,7 +191,11 @@ class PublisherHandler(BaseHTTPRequestHandler):
         source_url = fields.get("source_url", {}).get("data", b"").decode().strip()
 
         if not bot_token or not chat_id:
-            self.respond_with_form("error", "Укажите Bot API Key и Chat ID")
+            self.respond_with_form(
+                "error",
+                "Не удалось отправить пост",
+                "Укажите Bot API Key и Chat ID"
+            )
             return
 
         content = None
@@ -201,7 +206,11 @@ class PublisherHandler(BaseHTTPRequestHandler):
             try:
                 content = file_field["data"].decode("utf-8")
             except UnicodeDecodeError:
-                self.respond_with_form("error", "Файл должен быть в UTF-8")
+                self.respond_with_form(
+                    "error",
+                    "Не удалось отправить пост",
+                    "Файл должен быть в кодировке UTF-8"
+                )
                 return
             fmt = detect_format(file_field["filename"])
         elif source_url:
@@ -210,16 +219,28 @@ class PublisherHandler(BaseHTTPRequestHandler):
                 resp = requests.get(resolved, timeout=15)
                 resp.raise_for_status()
             except requests.RequestException as exc:
-                self.respond_with_form("error", f"Не удалось загрузить URL: {exc}")
+                self.respond_with_form(
+                    "error",
+                    "Не удалось отправить пост",
+                    f"Ошибка загрузки файла: {exc}"
+                )
                 return
             content = resp.text
             fmt = detect_format(resolved)
         else:
-            self.respond_with_form("error", "Нужно выбрать файл или указать ссылку")
+            self.respond_with_form(
+                "error",
+                "Не удалось отправить пост",
+                "Нужно выбрать файл или указать ссылку"
+            )
             return
 
         if not content.strip():
-            self.respond_with_form("error", "Содержимое пустое")
+            self.respond_with_form(
+                "error",
+                "Не удалось отправить пост",
+                "Содержимое файла пустое"
+            )
             return
 
         try:
@@ -228,36 +249,73 @@ class PublisherHandler(BaseHTTPRequestHandler):
             result = response.json()
         except requests.HTTPError as exc:
             body = exc.response.text if exc.response is not None else str(exc)
-            self.respond_with_form("error", f"Telegram API ошибка: {body}")
+            self.respond_with_form(
+                "error",
+                "Telegram отклонил запрос",
+                body
+            )
             return
         except requests.RequestException as exc:
-            self.respond_with_form("error", f"Сетевая ошибка: {exc}")
+            self.respond_with_form(
+                "error",
+                "Не удалось отправить пост",
+                f"Сетевая ошибка: {exc}"
+            )
             return
         except json.JSONDecodeError:
-            self.respond_with_form("error", "Некорректный ответ Telegram")
+            self.respond_with_form(
+                "error",
+                "Не удалось отправить пост",
+                "Ответ Telegram не похож на JSON"
+            )
             return
 
         if not result.get("ok"):
             self.respond_with_form(
                 "error",
-                f"Telegram вернул ошибку:\n{json.dumps(result, ensure_ascii=False, indent=2)}"
+                "Telegram вернул ошибку",
+                json.dumps(result, ensure_ascii=False, indent=2)
             )
             return
 
         message_id = result["result"]["message_id"]
-        self.redirect_with_status("success", f"Пост отправлен. message_id={message_id}")
+        self.redirect_with_status(
+            "success",
+            "Пост опубликован",
+            f"ID отправленного сообщения: {message_id}"
+        )
 
-    def respond_with_form(self, status: str | None = None, text: str = ""):
+    def respond_with_form(self, status: str | None = None,
+                          user_msg: str = "", tech_msg: str = ""):
+        block = ""
         if status == "success":
-            block = f"<div class='alert success'>{escape(text)}</div>"
-        elif status == "error" and text:
-            block = f"<div class='alert error'>{escape(text)}</div>"
-        else:
-            block = ""
-        self.respond(200, render_template(block))
+            title = user_msg or "Операция выполнена успешно"
+            block = (
+                "<div class='alert success'>"
+                f"<div class='alert-title'>{escape(title)}</div>"
+            )
+            if tech_msg:
+                block += f"<div class='alert-meta'>{escape(tech_msg)}</div>"
+            block += "</div>"
+        elif status == "error":
+            title = user_msg or "Не удалось выполнить действие"
+            block = (
+                "<div class='alert error'>"
+                f"<div class='alert-title'>{escape(title)}</div>"
+            )
+            if tech_msg:
+                block += f"<div class='alert-meta'>{escape(tech_msg)}</div>"
+            block += "</div>"
+        data = render_template(block)
+        self.respond(200, data)
 
-    def redirect_with_status(self, status: str, text: str):
-        location = f"/?status={quote_plus(status or '')}&msg={quote_plus(text or '')}"
+    def redirect_with_status(self, status: str, user_msg: str, tech_msg: str = ""):
+        location = (
+            "/?status="
+            f"{quote_plus(status or '')}"
+            f"&msg={quote_plus(user_msg or '')}"
+            f"&detail={quote_plus(tech_msg or '')}"
+        )
         self.send_response(303)
         self.send_header("Location", location)
         self.send_header("Cache-Control", "no-cache")
