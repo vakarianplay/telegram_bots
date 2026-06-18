@@ -25,6 +25,7 @@ class AppConfig:
     host: str
     port: int
     template_path: Path
+    help_path: Path
     tg_timeout: int
     base_dir: Path
     app_title: str
@@ -46,11 +47,13 @@ class AppConfig:
 
         base_dir = path.parent.resolve()
         template_path = (base_dir / templates.get("index", "templates/index.html")).resolve()
+        help_path = (base_dir / templates.get("help", "templates/help.html")).resolve()
 
         return cls(
             host=server.get("host", "0.0.0.0"),
             port=int(server.get("port", 8080)),
             template_path=template_path,
+            help_path=help_path,
             tg_timeout=int(telegram.get("request_timeout", 20)),
             base_dir=base_dir,
             app_title=ui.get("title", "RichMessage Publisher"),
@@ -92,7 +95,6 @@ class AssetResolver:
         raise ValueError(f"Неизвестный тип источника иконки: {cfg.source}")
 
     def _simpleicons_url(self, slug: str) -> str:
-        # поддержка форматов "telegram" или "telegram/1DA1F2"
         return f"{self.SIMPLE_ICONS_BASE}/{slug}"
 
     def _data_uri_from_file(self, path: Path) -> str:
@@ -110,11 +112,14 @@ class AssetResolver:
         return "application/octet-stream"
 
 class TemplateRenderer:
-    def __init__(self, template_path: Path, title: str,
+    def __init__(self, template_path: Path, help_path: Path, title: str,
                  icon: AssetInfo | None, favicon: AssetInfo | None):
         if not template_path.exists():
             raise FileNotFoundError(f"Не найден шаблон: {template_path}")
+        if not help_path.exists():
+            raise FileNotFoundError(f"Не найден файл инструкции: {help_path}")
         self.template_path = template_path
+        self.help_html = help_path.read_text(encoding="utf-8")
         self.title = title
         self.icon = icon
         self.favicon = favicon
@@ -125,6 +130,7 @@ class TemplateRenderer:
             "{{app_title}}": escape(self.title),
             "{{brand_icon}}": self._icon_html(),
             "{{favicon_link}}": self._favicon_html(),
+            "{{help_content}}": self.help_html,
             "{{message_block}}": message_block or ""
         }
         for needle, repl in replacements.items():
@@ -452,6 +458,7 @@ def run_server(config_path: str = "config.yaml"):
 
     renderer = TemplateRenderer(
         template_path=config.template_path,
+        help_path=config.help_path,
         title=config.app_title,
         icon=icon_info,
         favicon=favicon_info

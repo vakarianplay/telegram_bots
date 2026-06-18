@@ -4,6 +4,7 @@ server:
 
 templates:
   index: "templates/index.html"
+  help: "templates/help.html"
 
 telegram:
   request_timeout: 20
