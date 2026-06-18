@@ -30,11 +30,11 @@ JSON_PAYLOAD="$(
         end
     '
 )"
-
 curl -sS -X POST \
   -H "Content-Type: application/json" \
   -d "$JSON_PAYLOAD" \
   "https://api.telegram.org/bot${BOT_TOKEN}/sendRichMessage" 
+    
   </code>
 </pre>
 
