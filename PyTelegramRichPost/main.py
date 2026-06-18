@@ -1,144 +1,284 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import base64
 import json
+import mimetypes
 import re
+from dataclasses import dataclass
 from email.parser import BytesParser
 from email.policy import default as default_policy
 from html import escape
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse, quote_plus
+from typing import Any
+from urllib.parse import parse_qs, quote_plus, urlparse
 import requests
+import yaml
 
-HOST = "0.0.0.0"
-PORT = 8080
-TEMPLATE_PATH = Path("templates/index.html")
+@dataclass
+class AssetConfig:
+    source: str
+    value: str | None
 
-def github_blob_to_raw(url: str) -> str:
-    parsed = urlparse(url)
-    if "github.com" not in parsed.netloc or "/blob/" not in parsed.path:
-        return url
-    parts = parsed.path.strip("/").split("/")
-    if len(parts) < 5:
-        return url
-    user, repo, blob, branch, *rest = parts
-    raw_path = "/".join(rest)
-    return f"https://raw.githubusercontent.com/{user}/{repo}/{branch}/{raw_path}"
+@dataclass
+class AppConfig:
+    host: str
+    port: int
+    template_path: Path
+    tg_timeout: int
+    base_dir: Path
+    app_title: str
+    icon: AssetConfig
+    favicon: AssetConfig
 
-def detect_format(filename: str) -> str:
-    if filename.lower().endswith((".html", ".htm")):
-        return "html"
-    return "markdown"
+    @classmethod
+    def load(cls, path: Path) -> "AppConfig":
+        if not path.exists():
+            raise FileNotFoundError(f"Не найден файл конфигурации: {path}")
+        with path.open("r", encoding="utf-8") as fh:
+            raw = yaml.safe_load(fh) or {}
+        server = raw.get("server", {})
+        templates = raw.get("templates", {})
+        telegram = raw.get("telegram", {})
+        ui = raw.get("ui", {})
+        icon = ui.get("icon", {}) if isinstance(ui, dict) else {}
+        favicon = ui.get("favicon", {}) if isinstance(ui, dict) else {}
 
-def telegram_request(token: str, method: str, payload: dict) -> dict:
-    url = f"https://api.telegram.org/bot{token}/{method}"
-    resp = requests.post(url, json=payload, timeout=20)
-    resp.raise_for_status()
-    data = resp.json()
-    if not data.get("ok"):
-        raise RuntimeError(data.get("description", "Telegram API error"))
-    return data["result"]
+        base_dir = path.parent.resolve()
+        template_path = (base_dir / templates.get("index", "templates/index.html")).resolve()
 
-def get_file_url(token: str, file_id: str | None) -> str | None:
-    if not file_id:
-        return None
-    result = telegram_request(token, "getFile", {"file_id": file_id})
-    file_path = result.get("file_path")
-    if not file_path:
-        return None
-    return f"https://api.telegram.org/file/bot{token}/{file_path}"
-
-def fetch_bot_profile(token: str) -> dict:
-    result = telegram_request(token, "getMe", {})
-    return {
-        "name": result.get("first_name", ""),
-        "username": result.get("username", ""),
-        "photo_url": None
-    }
-
-def fetch_chat_profile(token: str, chat_id: str) -> dict:
-    result = telegram_request(token, "getChat", {"chat_id": chat_id})
-    chat_info = {
-        "title": result.get("title") or result.get("first_name") or "",
-        "type": result.get("type", ""),
-        "photo_url": None
-    }
-    photo = result.get("photo")
-    if isinstance(photo, dict):
-        file_id = photo.get("big_file_id") or photo.get("small_file_id")
-        chat_info["photo_url"] = get_file_url(token, file_id)
-    return chat_info
-
-def check_can_post(token: str, chat_id: str) -> bool:
-    try:
-        telegram_request(token, "sendChatAction", {
-            "chat_id": chat_id,
-            "action": "typing"
-        })
-        return True
-    except Exception:
-        return False
-
-def send_rich_message(bot_token: str, chat_id: str, content: str,
-                      fmt: str, is_rtl: bool) -> requests.Response:
-    payload = {
-        "chat_id": int(chat_id) if re.fullmatch(r"-?\d+", chat_id) else chat_id,
-        "rich_message": {fmt: content}
-    }
-    if is_rtl:
-        payload["rich_message"]["is_rtl"] = True
-    url = f"https://api.telegram.org/bot{bot_token}/sendRichMessage"
-    return requests.post(url, json=payload, timeout=20)
-
-def parse_form(handler: BaseHTTPRequestHandler) -> dict:
-    content_type = handler.headers.get("Content-Type", "")
-    length = int(handler.headers.get("Content-Length", "0"))
-    body = handler.rfile.read(length)
-
-    if "multipart/form-data" in content_type:
-        if "boundary=" not in content_type:
-            return {}
-        boundary = content_type.split("boundary=", 1)[1].strip().strip('"')
-        parser = BytesParser(policy=default_policy)
-        message = parser.parsebytes(
-            b"Content-Type: multipart/form-data; boundary="
-            + boundary.encode()
-            + b"\r\n\r\n"
-            + body
+        return cls(
+            host=server.get("host", "0.0.0.0"),
+            port=int(server.get("port", 8080)),
+            template_path=template_path,
+            tg_timeout=int(telegram.get("request_timeout", 20)),
+            base_dir=base_dir,
+            app_title=ui.get("title", "RichMessage Publisher"),
+            icon=AssetConfig(icon.get("source", "none"), icon.get("value")),
+            favicon=AssetConfig(favicon.get("source", "none"), favicon.get("value"))
         )
-        fields = {}
-        for part in message.iter_parts():
-            disposition = part.get("Content-Disposition", "")
-            if "form-data" not in disposition:
-                continue
-            name = part.get_param("name", header="Content-Disposition")
-            if not name:
-                continue
-            filename = part.get_filename()
-            payload = part.get_payload(decode=True) or b""
-            fields[name] = {"filename": filename, "data": payload}
-        return fields
 
-    if "application/x-www-form-urlencoded" in content_type:
-        data = parse_qs(body.decode("utf-8"), keep_blank_values=True)
+@dataclass
+class AssetInfo:
+    href: str
+    mime: str | None = None
+
+class AssetResolver:
+    SIMPLE_ICONS_BASE = "https://cdn.simpleicons.org"
+
+    def __init__(self, base_dir: Path):
+        self.base_dir = base_dir
+
+    def resolve(self, cfg: AssetConfig) -> AssetInfo | None:
+        source = (cfg.source or "none").lower()
+        value = (cfg.value or "").strip()
+
+        if source == "none" or not value:
+            return None
+
+        if source == "simpleicons":
+            url = self._simpleicons_url(value)
+            return AssetInfo(href=url, mime="image/svg+xml")
+
+        if source == "url":
+            return AssetInfo(href=value, mime=None)
+
+        if source == "file":
+            path = (self.base_dir / value).resolve() if not Path(value).is_absolute() else Path(value)
+            if not path.exists():
+                raise FileNotFoundError(f"Локальный файл иконки не найден: {path}")
+            return AssetInfo(href=self._data_uri_from_file(path), mime=self._mime_from_path(path))
+
+        raise ValueError(f"Неизвестный тип источника иконки: {cfg.source}")
+
+    def _simpleicons_url(self, slug: str) -> str:
+        # поддержка форматов "telegram" или "telegram/1DA1F2"
+        return f"{self.SIMPLE_ICONS_BASE}/{slug}"
+
+    def _data_uri_from_file(self, path: Path) -> str:
+        mime = self._mime_from_path(path)
+        data = base64.b64encode(path.read_bytes()).decode("ascii")
+        return f"data:{mime};base64,{data}"
+
+    @staticmethod
+    def _mime_from_path(path: Path) -> str:
+        mime, _ = mimetypes.guess_type(path.name)
+        if mime:
+            return mime
+        if path.suffix.lower() == ".ico":
+            return "image/x-icon"
+        return "application/octet-stream"
+
+class TemplateRenderer:
+    def __init__(self, template_path: Path, title: str,
+                 icon: AssetInfo | None, favicon: AssetInfo | None):
+        if not template_path.exists():
+            raise FileNotFoundError(f"Не найден шаблон: {template_path}")
+        self.template_path = template_path
+        self.title = title
+        self.icon = icon
+        self.favicon = favicon
+
+    def render(self, message_block: str = "") -> bytes:
+        html = self.template_path.read_text(encoding="utf-8")
+        replacements = {
+            "{{app_title}}": escape(self.title),
+            "{{brand_icon}}": self._icon_html(),
+            "{{favicon_link}}": self._favicon_html(),
+            "{{message_block}}": message_block or ""
+        }
+        for needle, repl in replacements.items():
+            html = html.replace(needle, repl)
+        return html.encode("utf-8")
+
+    def _icon_html(self) -> str:
+        if not self.icon:
+            return ""
+        return (
+            f"<img class='brand-icon' src='{self.icon.href}' "
+            f"alt='{escape(self.title)}' loading='lazy' />"
+        )
+
+    def _favicon_html(self) -> str:
+        if not self.favicon:
+            return ""
+        mime = self.favicon.mime or "image/png"
+        return f"<link rel='icon' type='{mime}' href='{self.favicon.href}' />"
+
+class TelegramClient:
+    def __init__(self, token: str, timeout: int):
+        self.token = token
+        self.timeout = timeout
+
+    def _request(self, method: str, payload: dict) -> Any:
+        url = f"https://api.telegram.org/bot{self.token}/{method}"
+        resp = requests.post(url, json=payload, timeout=self.timeout)
+        resp.raise_for_status()
+        data = resp.json()
+        if not data.get("ok"):
+            raise RuntimeError(data.get("description", "Telegram API error"))
+        return data["result"]
+
+    def get_profile(self) -> dict:
+        result = self._request("getMe", {})
         return {
-            key: {"filename": None, "data": values[-1].encode("utf-8")}
-            for key, values in data.items()
+            "name": result.get("first_name", ""),
+            "username": result.get("username", ""),
+            "photo_url": None
         }
 
-    return {}
+    def get_chat(self, chat_id: str) -> dict:
+        result = self._request("getChat", {"chat_id": chat_id})
+        photo_url = None
+        photo = result.get("photo")
+        if isinstance(photo, dict):
+            file_id = photo.get("big_file_id") or photo.get("small_file_id")
+            photo_url = self.get_file_url(file_id)
+        return {
+            "title": result.get("title") or result.get("first_name") or "",
+            "type": result.get("type", ""),
+            "photo_url": photo_url
+        }
 
-def render_template(message_block: str = "") -> bytes:
-    html = TEMPLATE_PATH.read_text(encoding="utf-8")
-    return html.replace("{{message_block}}", message_block).encode("utf-8")
+    def get_file_url(self, file_id: str | None) -> str | None:
+        if not file_id:
+            return None
+        file_info = self._request("getFile", {"file_id": file_id})
+        file_path = file_info.get("file_path")
+        if not file_path:
+            return None
+        return f"https://api.telegram.org/file/bot{self.token}/{file_path}"
+
+    def can_post(self, chat_id: str) -> bool:
+        try:
+            self._request("sendChatAction", {"chat_id": chat_id, "action": "typing"})
+            return True
+        except Exception:
+            return False
+
+    def send_rich_message(self, chat_id: str, content: str,
+                          fmt: str, is_rtl: bool = False) -> dict:
+        payload = {
+            "chat_id": int(chat_id) if re.fullmatch(r"-?\d+", chat_id) else chat_id,
+            "rich_message": {fmt: content}
+        }
+        if is_rtl:
+            payload["rich_message"]["is_rtl"] = True
+        return self._request("sendRichMessage", payload)
+
+class ContentLoader:
+    @staticmethod
+    def github_blob_to_raw(url: str) -> str:
+        parsed = urlparse(url)
+        if "github.com" not in parsed.netloc or "/blob/" not in parsed.path:
+            return url
+        parts = parsed.path.strip("/").split("/")
+        if len(parts) < 5:
+            return url
+        user, repo, blob, branch, *rest = parts
+        raw_path = "/".join(rest)
+        return f"https://raw.githubusercontent.com/{user}/{repo}/{branch}/{raw_path}"
+
+    @staticmethod
+    def detect_format(name: str) -> str:
+        return "html" if name.lower().endswith((".html", ".htm")) else "markdown"
+
+    @staticmethod
+    def load_from_url(url: str) -> str:
+        resp = requests.get(url, timeout=15)
+        resp.raise_for_status()
+        return resp.text
+
+class FormParser:
+    @staticmethod
+    def parse(handler: BaseHTTPRequestHandler) -> dict:
+        content_type = handler.headers.get("Content-Type", "")
+        length = int(handler.headers.get("Content-Length", "0"))
+        body = handler.rfile.read(length)
+
+        if "multipart/form-data" in content_type:
+            if "boundary=" not in content_type:
+                return {}
+            boundary = content_type.split("boundary=", 1)[1].strip().strip('"')
+            parser = BytesParser(policy=default_policy)
+            message = parser.parsebytes(
+                b"Content-Type: multipart/form-data; boundary="
+                + boundary.encode()
+                + b"\r\n\r\n"
+                + body
+            )
+            fields = {}
+            for part in message.iter_parts():
+                disposition = part.get("Content-Disposition", "")
+                if "form-data" not in disposition:
+                    continue
+                name = part.get_param("name", header="Content-Disposition")
+                if not name:
+                    continue
+                filename = part.get_filename()
+                payload = part.get_payload(decode=True) or b""
+                fields[name] = {"filename": filename, "data": payload}
+            return fields
+
+        if "application/x-www-form-urlencoded" in content_type:
+            data = parse_qs(body.decode("utf-8"), keep_blank_values=True)
+            return {
+                key: {"filename": None, "data": values[-1].encode("utf-8")}
+                for key, values in data.items()
+            }
+
+        return {}
 
 class PublisherHandler(BaseHTTPRequestHandler):
-    server_version = "RichPublisher/2.2"
+    server_version = "RichPublisher/3.1"
+    renderer: TemplateRenderer = None
+    config: AppConfig = None
 
     def do_GET(self):
         parsed = urlparse(self.path)
         if parsed.path != "/":
-            self.respond(404, render_template("<div class='alert error'><div class='alert-title'>404</div></div>"))
+            block = "<div class='alert error'><div class='alert-title'>404</div></div>"
+            self.respond(404, self.renderer.render(block))
             return
         params = parse_qs(parsed.query)
         status = params.get("status", [None])[0]
@@ -152,7 +292,8 @@ class PublisherHandler(BaseHTTPRequestHandler):
         elif self.path == "/api/check":
             self.handle_check()
         else:
-            self.respond(404, render_template("<div class='alert error'><div class='alert-title'>404</div></div>"))
+            block = "<div class='alert error'><div class='alert-title'>404</div></div>"
+            self.respond(404, self.renderer.render(block))
 
     def handle_check(self):
         try:
@@ -169,10 +310,12 @@ class PublisherHandler(BaseHTTPRequestHandler):
             self.json_response(400, {"ok": False, "error": "Укажите Bot API Key и Chat ID"})
             return
 
+        client = TelegramClient(bot_token, self.config.tg_timeout)
+
         try:
-            bot_info = fetch_bot_profile(bot_token)
-            chat_info = fetch_chat_profile(bot_token, chat_id)
-            can_post = check_can_post(bot_token, chat_id)
+            bot_info = client.get_profile()
+            chat_info = client.get_chat(chat_id)
+            can_post = client.can_post(chat_id)
         except Exception as exc:
             self.json_response(400, {"ok": False, "error": str(exc)})
             return
@@ -185,16 +328,14 @@ class PublisherHandler(BaseHTTPRequestHandler):
         })
 
     def handle_publish(self):
-        fields = parse_form(self)
+        fields = FormParser.parse(self)
         bot_token = fields.get("bot_token", {}).get("data", b"").decode().strip()
         chat_id = fields.get("chat_id", {}).get("data", b"").decode().strip()
         source_url = fields.get("source_url", {}).get("data", b"").decode().strip()
 
         if not bot_token or not chat_id:
             self.respond_with_form(
-                "error",
-                "Не удалось отправить пост",
-                "Укажите Bot API Key и Chat ID"
+                "error", "Не удалось отправить пост", "Укажите Bot API Key и Chat ID"
             )
             return
 
@@ -207,86 +348,52 @@ class PublisherHandler(BaseHTTPRequestHandler):
                 content = file_field["data"].decode("utf-8")
             except UnicodeDecodeError:
                 self.respond_with_form(
-                    "error",
-                    "Не удалось отправить пост",
-                    "Файл должен быть в кодировке UTF-8"
+                    "error", "Не удалось отправить пост", "Файл должен быть в кодировке UTF-8"
                 )
                 return
-            fmt = detect_format(file_field["filename"])
+            fmt = ContentLoader.detect_format(file_field["filename"])
         elif source_url:
-            resolved = github_blob_to_raw(source_url)
+            resolved = ContentLoader.github_blob_to_raw(source_url)
             try:
-                resp = requests.get(resolved, timeout=15)
-                resp.raise_for_status()
+                content = ContentLoader.load_from_url(resolved)
             except requests.RequestException as exc:
                 self.respond_with_form(
-                    "error",
-                    "Не удалось отправить пост",
-                    f"Ошибка загрузки файла: {exc}"
+                    "error", "Не удалось отправить пост", f"Ошибка загрузки файла: {exc}"
                 )
                 return
-            content = resp.text
-            fmt = detect_format(resolved)
+            fmt = ContentLoader.detect_format(resolved)
         else:
             self.respond_with_form(
-                "error",
-                "Не удалось отправить пост",
-                "Нужно выбрать файл или указать ссылку"
+                "error", "Не удалось отправить пост", "Нужно выбрать файл или указать ссылку"
             )
             return
 
         if not content.strip():
             self.respond_with_form(
-                "error",
-                "Не удалось отправить пост",
-                "Содержимое файла пустое"
+                "error", "Не удалось отправить пост", "Содержимое файла пустое"
             )
             return
+
+        client = TelegramClient(bot_token, self.config.tg_timeout)
 
         try:
-            response = send_rich_message(bot_token, chat_id, content, fmt, is_rtl=False)
-            response.raise_for_status()
-            result = response.json()
+            result = client.send_rich_message(chat_id, content, fmt, is_rtl=False)
+        except RuntimeError as exc:
+            self.respond_with_form("error", "Telegram вернул ошибку", str(exc))
+            return
         except requests.HTTPError as exc:
             body = exc.response.text if exc.response is not None else str(exc)
-            self.respond_with_form(
-                "error",
-                "Telegram отклонил запрос",
-                body
-            )
+            self.respond_with_form("error", "Telegram отклонил запрос", body)
             return
         except requests.RequestException as exc:
-            self.respond_with_form(
-                "error",
-                "Не удалось отправить пост",
-                f"Сетевая ошибка: {exc}"
-            )
-            return
-        except json.JSONDecodeError:
-            self.respond_with_form(
-                "error",
-                "Не удалось отправить пост",
-                "Ответ Telegram не похож на JSON"
-            )
+            self.respond_with_form("error", "Не удалось отправить пост", f"Сетевая ошибка: {exc}")
             return
 
-        if not result.get("ok"):
-            self.respond_with_form(
-                "error",
-                "Telegram вернул ошибку",
-                json.dumps(result, ensure_ascii=False, indent=2)
-            )
-            return
+        message_id = result.get("message_id")
+        detail = f"ID отправленного сообщения: {message_id}" if message_id else ""
+        self.redirect_with_status("success", "Пост опубликован", detail)
 
-        message_id = result["result"]["message_id"]
-        self.redirect_with_status(
-            "success",
-            "Пост опубликован",
-            f"ID отправленного сообщения: {message_id}"
-        )
-
-    def respond_with_form(self, status: str | None = None,
-                          user_msg: str = "", tech_msg: str = ""):
+    def respond_with_form(self, status: str | None, user_msg: str, tech_msg: str):
         block = ""
         if status == "success":
             title = user_msg or "Операция выполнена успешно"
@@ -306,10 +413,9 @@ class PublisherHandler(BaseHTTPRequestHandler):
             if tech_msg:
                 block += f"<div class='alert-meta'>{escape(tech_msg)}</div>"
             block += "</div>"
-        data = render_template(block)
-        self.respond(200, data)
+        self.respond(200, self.renderer.render(block))
 
-    def redirect_with_status(self, status: str, user_msg: str, tech_msg: str = ""):
+    def redirect_with_status(self, status: str, user_msg: str, tech_msg: str):
         location = (
             "/?status="
             f"{quote_plus(status or '')}"
@@ -338,9 +444,24 @@ class PublisherHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
-def run_server():
-    server = ThreadingHTTPServer((HOST, PORT), PublisherHandler)
-    print(f"Server running on http://{HOST}:{PORT}")
+def run_server(config_path: str = "config.yaml"):
+    config = AppConfig.load(Path(config_path))
+    resolver = AssetResolver(config.base_dir)
+    icon_info = resolver.resolve(config.icon)
+    favicon_info = resolver.resolve(config.favicon)
+
+    renderer = TemplateRenderer(
+        template_path=config.template_path,
+        title=config.app_title,
+        icon=icon_info,
+        favicon=favicon_info
+    )
+
+    PublisherHandler.renderer = renderer
+    PublisherHandler.config = config
+
+    server = ThreadingHTTPServer((config.host, config.port), PublisherHandler)
+    print(f"Server running on http://{config.host}:{config.port}")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -349,6 +470,4 @@ def run_server():
         server.server_close()
 
 if __name__ == "__main__":
-    if not TEMPLATE_PATH.exists():
-        raise SystemExit("Не найден templates/index.html")
     run_server()
