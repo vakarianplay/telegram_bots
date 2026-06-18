@@ -1,0 +1,20 @@
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+templates:
+  index: "templates/index.html"
+
+telegram:
+  request_timeout: 20
+
+ui:
+  title: "RichMessage Publisher"
+  icon:
+    source: "simpleicons"   # simpleicons | url | file | none
+    value: "task"       # simpleicons.org слаг или URL/путь
+    # source: url
+    # value: https://user-images.githubusercontent.com/20814332/213991843-15515abb-40fc-4013-9680-367a5ff9334a.jpg
+  favicon:
+    source: "url"           # simpleicons | url | file | none
+    value: "https://cdn.simpleicons.org/telegram/1DA1F2"
