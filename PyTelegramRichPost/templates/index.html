@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<title>RichMessage Publisher</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+body { font-family: Arial, Helvetica, sans-serif; margin: 16px; max-width: 720px; }
+form { display: flex; flex-direction: column; gap: 1rem; }
+input[type=text], input[type=file] { padding: 0.5rem; font-size: 1rem; }
+button { padding: 0.75rem; font-size: 1rem; cursor: pointer; }
+.alert { padding: 0.75rem; border-radius: 6px; margin-top: 1rem; }
+.success { background: #e6f4ea; border: 1px solid #6cc178; }
+.error { background: #fdecea; border: 1px solid #f05b5b; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h1>Telegram RichMessage Publisher</h1>
+<p>Загрузите Markdown/HTML или укажите ссылку на GitHub. Укажите токен бота и chat_id, затем нажмите «Создать пост».</p>
+<form action="/publish" method="post" enctype="multipart/form-data">
+<label>Bot API Key:
+<input type="text" name="bot_token" required />
+</label>
+<label>Chat ID:
+<input type="text" name="chat_id" required />
+</label>
+<label>Загрузить файл (.md или .html):
+<input type="file" name="content_file" accept=".md,.markdown,.html,.htm" />
+</label>
+<label>Или GitHub URL (raw или ссылка на blob):
+<input type="text" name="source_url" placeholder="https://github.com/user/repo/blob/main/README.md" />
+</label>
+<label>
+<input type="checkbox" name="is_rtl" value="1" />
+Показать справа-налево
+</label>
+<button type="submit">Создать пост</button>
+</form>
+{{message_block}}
+</body>
+</html>
