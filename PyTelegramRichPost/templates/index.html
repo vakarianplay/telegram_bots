@@ -6,9 +6,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 {{favicon_link}}
 <style>
-body { font-family: Arial, Helvetica, sans-serif; margin: 16px; max-width: 720px; }
-.brand { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; }
+body { font-family: Arial, Helvetica, sans-serif; margin: 16px auto; max-width: 760px; padding: 0 16px; }
+.brand { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
 .brand-icon { width: 48px; height: 48px; border-radius: 12px; object-fit: cover; background: #f2f2f2; }
+.brand-actions { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
+.help-link { color: #0a66c2; text-decoration: underline; cursor: pointer; font-size: 0.95rem; background: none; border: none; padding: 0; }
 form { display: flex; flex-direction: column; gap: 1rem; }
 input[type=text], input[type=file] { padding: 0.5rem; font-size: 1rem; width: 100%; }
 button { padding: 0.75rem; font-size: 1rem; cursor: pointer; }
@@ -26,6 +28,23 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .info-card.hidden { display: none; }
 .info-card .meta { display: flex; flex-direction: column; }
 #status-row { font-size: 0.95rem; color: #555; min-height: 1.2rem; }
+.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
+.modal { position: fixed; inset: 0; display: flex; justify-content: center; align-items: flex-start; padding: 4rem 1rem; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
+.modal-content { max-width: 640px; width: 100%; background: #fff; border-radius: 12px; box-shadow: 0 10px 35px rgba(15,23,42,0.25); padding: 1.5rem; position: relative; color: #111; line-height: 1.5; }
+.modal-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+.modal-header svg { width: 28px; height: 28px; color: #0a66c2; flex-shrink: 0; }
+.modal-close { position: absolute; top: 0.75rem; right: 0.75rem; border: none; background: none; font-size: 1.5rem; cursor: pointer; }
+.modal ol { padding-left: 1.25rem; margin: 1rem 0; }
+.modal ol li + li { margin-top: 0.5rem; }
+.modal-visible .modal-backdrop,
+.modal-visible .modal { opacity: 1; pointer-events: auto; }
+.modal-hidden { display: none; }
+footer { margin: 2rem 0 1rem; padding-top: 1rem; border-top: 1px solid #e4e4e7; font-size: 0.95rem; color: #52525b; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center; }
+footer a { color: #0a66c2; text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+.footer-links { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+.github-link { display: inline-flex; align-items: center; gap: 0.35rem; }
+.github-link svg { width: 18px; height: 18px; fill: currentColor; }
 </style>
 </head>
 <body>
@@ -33,7 +52,11 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 {{brand_icon}}
 <h1>{{app_title}}</h1>
 </div>
-<p>Загрузите Markdown/HTML или укажите ссылку на GitHub. Укажите токен бота и chat_id, затем выполните проверку — если бот может постить, кнопка станет активной.</p>
+<h3>Создание красивых постов в Telegram с использованием Markdown и HTML.</h3>
+<div class="brand-actions">
+<button type="button" id="open-help" class="help-link"><b>Инструкция по использованию</b></button>
+</div>
+<p>Укажите токен бота и chat_id — если бот может постить, кнопка станет активной.</p>
 <form id="publisher-form" action="/publish" method="post" enctype="multipart/form-data">
 <label>Bot API Key:
 <input type="text" name="bot_token" id="bot-token" required />
@@ -66,12 +89,45 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 <label>Загрузить файл (.md или .html):
 <input type="file" name="content_file" accept=".md,.markdown,.html,.htm" />
 </label>
-<label>Или GitHub URL (raw или ссылка на blob):
+<label>GitHub README.md или прямой URL:
 <input type="text" name="source_url" placeholder="https://github.com/user/repo/blob/main/README.md" />
 </label>
 <button type="submit" id="submit-btn" disabled>Создать пост</button>
 </form>
 {{message_block}}
+
+<div id="modal-root" class="modal-hidden">
+<div class="modal-backdrop"></div>
+<div class="modal">
+<div class="modal-content">
+<button class="modal-close" id="close-help" aria-label="Закрыть">×</button>
+<div class="modal-header">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<circle cx="12" cy="12" r="10"></circle>
+<path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+<line x1="12" y1="17" x2="12.01" y2="17"></line>
+</svg>
+<h2 style="margin:0;">Как использовать приложение</h2>
+</div>
+{{help_content}}
+</div>
+</div>
+</div>
+
+<footer>
+<span>© {{app_title}}</span>
+<div class="footer-links">
+<a href="https://vakarian.website" target="_blank" rel="noopener noreferrer">vakarian.website</a>
+<a class="github-link" href="https://github.com/vakarianplay/telegram_bots/tree/main/PyTelegramRichPost" target="_blank" rel="noopener noreferrer">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path d="M12 .5C5.65.5.5 5.65.5 12c0 5.09 3.29 9.4 7.86 10.94.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.53-1.36-1.3-1.73-1.3-1.73-1.06-.73.08-.72.08-.72 1.17.08 1.78 1.21 1.78 1.21 1.04 1.78 2.73 1.27 3.4.97.11-.76.41-1.27.74-1.56-2.55-.29-5.23-1.28-5.23-5.71 0-1.26.45-2.29 1.2-3.1-.12-.29-.52-1.45.11-3.03 0 0 .98-.31 3.2 1.18a11.1 11.1 0 0 1 5.83 0c2.21-1.49 3.19-1.18 3.19-1.18.64 1.58.24 2.74.12 3.03.75.81 1.2 1.84 1.2 3.1 0 4.44-2.69 5.41-5.25 5.7.42.36.8 1.06.8 2.14 0 1.55-.01 2.8-.01 3.18 0 .32.21.69.8.57A10.51 10.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"></path>
+</svg>
+GitHub
+</a>
+<a href="https://github.com/vakarianplay/telegram_bots/tree/main/PyTelegramRichPost/deploy.md" target="_blank" rel="noopener noreferrer">Инструкция по развёртыванию</a>
+</div>
+</footer>
+
 <script>
 const tokenInput = document.getElementById('bot-token');
 const chatInput = document.getElementById('chat-id');
@@ -88,6 +144,10 @@ const chatCard = document.getElementById('chat-card');
 const chatAvatar = document.getElementById('chat-avatar');
 const chatTitle = document.getElementById('chat-title');
 const chatType = document.getElementById('chat-type');
+
+const modalRoot = document.getElementById('modal-root');
+const openHelpBtn = document.getElementById('open-help');
+const closeHelpBtn = document.getElementById('close-help');
 
 function loadStored() {
   try {
@@ -176,6 +236,16 @@ async function validateCredentials() {
   }
 }
 
+function openModal() {
+  modalRoot.classList.remove('modal-hidden');
+  document.body.classList.add('modal-visible');
+}
+
+function closeModal() {
+  modalRoot.classList.add('modal-hidden');
+  document.body.classList.remove('modal-visible');
+}
+
 tokenInput.addEventListener('input', () => {
   storeCreds();
   validateCredentials();
@@ -188,6 +258,20 @@ chatInput.addEventListener('input', () => {
 
 rememberBox.addEventListener('change', () => {
   storeCreds();
+});
+
+openHelpBtn.addEventListener('click', openModal);
+closeHelpBtn.addEventListener('click', closeModal);
+modalRoot.addEventListener('click', (event) => {
+  if (event.target === modalRoot || event.target.classList.contains('modal-backdrop')) {
+    closeModal();
+  }
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !modalRoot.classList.contains('modal-hidden')) {
+    closeModal();
+  }
 });
 
 document.addEventListener('DOMContentLoaded', () => {
