@@ -7,35 +7,191 @@
 <style>
 body { font-family: Arial, Helvetica, sans-serif; margin: 16px; max-width: 720px; }
 form { display: flex; flex-direction: column; gap: 1rem; }
-input[type=text], input[type=file] { padding: 0.5rem; font-size: 1rem; }
+input[type=text], input[type=file] { padding: 0.5rem; font-size: 1rem; width: 100%; }
 button { padding: 0.75rem; font-size: 1rem; cursor: pointer; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
 .alert { padding: 0.75rem; border-radius: 6px; margin-top: 1rem; }
 .success { background: #e6f4ea; border: 1px solid #6cc178; }
 .error { background: #fdecea; border: 1px solid #f05b5b; white-space: pre-wrap; }
+.checkbox-inline { display: flex; align-items: center; gap: 0.5rem; }
+.info-card { display: flex; gap: 0.75rem; align-items: center; padding: 0.75rem; border: 1px solid #e0e0e0; border-radius: 8px; margin-top: 0.5rem; }
+.info-card img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #f2f2f2; }
+.info-card.hidden { display: none; }
+.info-card .meta { display: flex; flex-direction: column; }
+#status-row { font-size: 0.95rem; color: #555; min-height: 1.2rem; }
 </style>
 </head>
 <body>
 <h1>Telegram RichMessage Publisher</h1>
-<p>Загрузите Markdown/HTML или укажите ссылку на GitHub. Укажите токен бота и chat_id, затем нажмите «Создать пост».</p>
-<form action="/publish" method="post" enctype="multipart/form-data">
+<p>Загрузите Markdown/HTML или укажите ссылку на GitHub. Укажите токен бота и chat_id, затем выполните проверку — если бот может постить, кнопка станет активной.</p>
+<form id="publisher-form" action="/publish" method="post" enctype="multipart/form-data">
 <label>Bot API Key:
-<input type="text" name="bot_token" required />
+<input type="text" name="bot_token" id="bot-token" required />
 </label>
 <label>Chat ID:
-<input type="text" name="chat_id" required />
+<div style="display:flex;gap:0.5rem;align-items:center;">
+<input type="text" name="chat_id" id="chat-id" required />
+<a href="https://t.me/re_GetMyIDBot" target="_blank" rel="noopener noreferrer">узнать chat id</a>
+</div>
 </label>
+<label class="checkbox-inline">
+<input type="checkbox" id="remember-creds" />
+Сохранять токен и chat_id на этом устройстве
+</label>
+<div id="status-row"></div>
+<div id="bot-card" class="info-card hidden">
+<img id="bot-avatar" alt="Bot avatar" />
+<div class="meta">
+<strong id="bot-name"></strong>
+<span id="bot-username"></span>
+</div>
+</div>
+<div id="chat-card" class="info-card hidden">
+<img id="chat-avatar" alt="Chat avatar" />
+<div class="meta">
+<strong id="chat-title"></strong>
+<span id="chat-type"></span>
+</div>
+</div>
 <label>Загрузить файл (.md или .html):
 <input type="file" name="content_file" accept=".md,.markdown,.html,.htm" />
 </label>
 <label>Или GitHub URL (raw или ссылка на blob):
 <input type="text" name="source_url" placeholder="https://github.com/user/repo/blob/main/README.md" />
 </label>
-<label>
-<input type="checkbox" name="is_rtl" value="1" />
-Показать справа-налево
-</label>
-<button type="submit">Создать пост</button>
+<button type="submit" id="submit-btn" disabled>Создать пост</button>
 </form>
 {{message_block}}
+<script>
+const tokenInput = document.getElementById('bot-token');
+const chatInput = document.getElementById('chat-id');
+const rememberBox = document.getElementById('remember-creds');
+const statusRow = document.getElementById('status-row');
+const submitBtn = document.getElementById('submit-btn');
+
+const botCard = document.getElementById('bot-card');
+const botAvatar = document.getElementById('bot-avatar');
+const botName = document.getElementById('bot-name');
+const botUsername = document.getElementById('bot-username');
+
+const chatCard = document.getElementById('chat-card');
+const chatAvatar = document.getElementById('chat-avatar');
+const chatTitle = document.getElementById('chat-title');
+const chatType = document.getElementById('chat-type');
+
+function loadStored() {
+  try {
+    const raw = localStorage.getItem('publisherCreds');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (data.token) tokenInput.value = data.token;
+    if (data.chatId) chatInput.value = data.chatId;
+    rememberBox.checked = true;
+  } catch (_) {}
+}
+
+function storeCreds() {
+  if (!rememberBox.checked) {
+    localStorage.removeItem('publisherCreds');
+    return;
+  }
+  const payload = {
+    token: tokenInput.value.trim(),
+    chatId: chatInput.value.trim()
+  };
+  localStorage.setItem('publisherCreds', JSON.stringify(payload));
+}
+
+function setStatus(text, ok = false) {
+  statusRow.textContent = text || '';
+  statusRow.style.color = ok ? '#1a7f37' : '#8a2c2c';
+}
+
+function resetCards() {
+  botCard.classList.add('hidden');
+  chatCard.classList.add('hidden');
+  botAvatar.src = '';
+  chatAvatar.src = '';
+  botName.textContent = '';
+  botUsername.textContent = '';
+  chatTitle.textContent = '';
+  chatType.textContent = '';
+}
+
+async function validateCredentials() {
+  const token = tokenInput.value.trim();
+  const chat = chatInput.value.trim();
+  submitBtn.disabled = true;
+  resetCards();
+
+  if (!token || !chat) {
+    setStatus('');
+    return;
+  }
+
+  setStatus('Проверяем доступ...', false);
+
+  try {
+    const res = await fetch('/api/check', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bot_token: token, chat_id: chat })
+    });
+
+    const data = await res.json();
+    if (!data.ok) {
+      setStatus(data.error || 'Ошибка проверки');
+      return;
+    }
+
+    setStatus('Публикация доступна — можно отправлять.', true);
+    submitBtn.disabled = !data.can_post;
+
+    if (data.bot) {
+      botName.textContent = data.bot.name || 'Без имени';
+      botUsername.textContent = data.bot.username ? '@' + data.bot.username : '';
+      if (data.bot.photo_url) {
+        botAvatar.src = data.bot.photo_url;
+      } else {
+        botAvatar.removeAttribute('src');
+      }
+      botCard.classList.remove('hidden');
+    }
+
+    if (data.chat) {
+      chatTitle.textContent = data.chat.title || 'Без названия';
+      chatType.textContent = data.chat.type || '';
+      if (data.chat.photo_url) {
+        chatAvatar.src = data.chat.photo_url;
+      } else {
+        chatAvatar.removeAttribute('src');
+      }
+      chatCard.classList.remove('hidden');
+    }
+  } catch (err) {
+    console.error(err);
+    setStatus('Ошибка соединения во время проверки.');
+  }
+}
+
+tokenInput.addEventListener('input', () => {
+  storeCreds();
+  validateCredentials();
+});
+
+chatInput.addEventListener('input', () => {
+  storeCreds();
+  validateCredentials();
+});
+
+rememberBox.addEventListener('change', () => {
+  storeCreds();
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadStored();
+  validateCredentials();
+});
+</script>
 </body>
 </html>

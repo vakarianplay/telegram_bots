@@ -7,7 +7,7 @@ from email.policy import default as default_policy
 from html import escape
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlparse, quote_plus
 import requests
 
 HOST = "0.0.0.0"
@@ -29,6 +29,55 @@ def detect_format(filename: str) -> str:
     if filename.lower().endswith((".html", ".htm")):
         return "html"
     return "markdown"
+
+def telegram_request(token: str, method: str, payload: dict) -> dict:
+    url = f"https://api.telegram.org/bot{token}/{method}"
+    resp = requests.post(url, json=payload, timeout=20)
+    resp.raise_for_status()
+    data = resp.json()
+    if not data.get("ok"):
+        raise RuntimeError(data.get("description", "Telegram API error"))
+    return data["result"]
+
+def get_file_url(token: str, file_id: str | None) -> str | None:
+    if not file_id:
+        return None
+    result = telegram_request(token, "getFile", {"file_id": file_id})
+    file_path = result.get("file_path")
+    if not file_path:
+        return None
+    return f"https://api.telegram.org/file/bot{token}/{file_path}"
+
+def fetch_bot_profile(token: str) -> dict:
+    result = telegram_request(token, "getMe", {})
+    return {
+        "name": result.get("first_name", ""),
+        "username": result.get("username", ""),
+        "photo_url": None  # Bot API не возвращает фото
+    }
+
+def fetch_chat_profile(token: str, chat_id: str) -> dict:
+    result = telegram_request(token, "getChat", {"chat_id": chat_id})
+    chat_info = {
+        "title": result.get("title") or result.get("first_name") or "",
+        "type": result.get("type", ""),
+        "photo_url": None
+    }
+    photo = result.get("photo")
+    if isinstance(photo, dict):
+        file_id = photo.get("big_file_id") or photo.get("small_file_id")
+        chat_info["photo_url"] = get_file_url(token, file_id)
+    return chat_info
+
+def check_can_post(token: str, chat_id: str) -> bool:
+    try:
+        telegram_request(token, "sendChatAction", {
+            "chat_id": chat_id,
+            "action": "typing"
+        })
+        return True
+    except Exception:
+        return False
 
 def send_rich_message(bot_token: str, chat_id: str, content: str,
                       fmt: str, is_rtl: bool) -> requests.Response:
@@ -84,24 +133,61 @@ def render_template(message_block: str = "") -> bytes:
     return html.replace("{{message_block}}", message_block).encode("utf-8")
 
 class PublisherHandler(BaseHTTPRequestHandler):
-    server_version = "RichPublisher/1.0"
+    server_version = "RichPublisher/2.1"
 
     def do_GET(self):
-        if self.path == "/":
-            self.respond_with_form()
+        parsed = urlparse(self.path)
+        if parsed.path != "/":
+            self.respond(404, render_template("<div class='alert error'>404</div>"))
+            return
+        params = parse_qs(parsed.query)
+        status = params.get("status", [None])[0]
+        message = params.get("msg", [""])[0]
+        self.respond_with_form(status, message)
+
+    def do_POST(self):
+        if self.path == "/publish":
+            self.handle_publish()
+        elif self.path == "/api/check":
+            self.handle_check()
         else:
             self.respond(404, render_template("<div class='alert error'>404</div>"))
 
-    def do_POST(self):
-        if self.path != "/publish":
-            self.respond(404, render_template("<div class='alert error'>404</div>"))
+    def handle_check(self):
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+            payload = json.loads(self.rfile.read(length).decode("utf-8"))
+        except Exception:
+            self.json_response(400, {"ok": False, "error": "Некорректный JSON"})
             return
 
+        bot_token = (payload.get("bot_token") or "").strip()
+        chat_id = (payload.get("chat_id") or "").strip()
+
+        if not bot_token or not chat_id:
+            self.json_response(400, {"ok": False, "error": "Укажите Bot API Key и Chat ID"})
+            return
+
+        try:
+            bot_info = fetch_bot_profile(bot_token)
+            chat_info = fetch_chat_profile(bot_token, chat_id)
+            can_post = check_can_post(bot_token, chat_id)
+        except Exception as exc:
+            self.json_response(400, {"ok": False, "error": str(exc)})
+            return
+
+        self.json_response(200, {
+            "ok": True,
+            "bot": bot_info,
+            "chat": chat_info,
+            "can_post": can_post
+        })
+
+    def handle_publish(self):
         fields = parse_form(self)
         bot_token = fields.get("bot_token", {}).get("data", b"").decode().strip()
         chat_id = fields.get("chat_id", {}).get("data", b"").decode().strip()
         source_url = fields.get("source_url", {}).get("data", b"").decode().strip()
-        is_rtl = "is_rtl" in fields
 
         if not bot_token or not chat_id:
             self.respond_with_form("error", "Укажите Bot API Key и Chat ID")
@@ -137,7 +223,7 @@ class PublisherHandler(BaseHTTPRequestHandler):
             return
 
         try:
-            response = send_rich_message(bot_token, chat_id, content, fmt, is_rtl)
+            response = send_rich_message(bot_token, chat_id, content, fmt, is_rtl=False)
             response.raise_for_status()
             result = response.json()
         except requests.HTTPError as exc:
@@ -159,20 +245,36 @@ class PublisherHandler(BaseHTTPRequestHandler):
             return
 
         message_id = result["result"]["message_id"]
-        self.respond_with_form("success", f"Пост отправлен. message_id={message_id}")
+        self.redirect_with_status("success", f"Пост отправлен. message_id={message_id}")
 
     def respond_with_form(self, status: str | None = None, text: str = ""):
         if status == "success":
             block = f"<div class='alert success'>{escape(text)}</div>"
-        elif status == "error":
+        elif status == "error" and text:
             block = f"<div class='alert error'>{escape(text)}</div>"
         else:
             block = ""
         self.respond(200, render_template(block))
 
+    def redirect_with_status(self, status: str, text: str):
+        location = f"/?status={quote_plus(status or '')}&msg={quote_plus(text or '')}"
+        self.send_response(303)
+        self.send_header("Location", location)
+        self.send_header("Cache-Control", "no-cache")
+        self.end_headers()
+
     def respond(self, status: int, body: bytes):
         self.send_response(status)
         self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "no-cache")
+        self.end_headers()
+        self.wfile.write(body)
+
+    def json_response(self, status: int, payload: dict):
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-cache")
         self.end_headers()
