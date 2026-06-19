@@ -6,72 +6,324 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 {{favicon_link}}
 <style>
-body { font-family: Arial, Helvetica, sans-serif; margin: 16px auto; max-width: 760px; padding: 0 16px; }
-.brand { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem; }
-.brand-icon { width: 48px; height: 48px; border-radius: 12px; object-fit: cover; background: #f2f2f2; }
-.brand-actions { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
-.help-link { color: #0a66c2; text-decoration: underline; cursor: pointer; font-size: 0.95rem; background: none; border: none; padding: 0; }
-form { display: flex; flex-direction: column; gap: 1rem; }
-input[type=text], input[type=file] { padding: 0.5rem; font-size: 1rem; width: 100%; }
-button { padding: 0.75rem; font-size: 1rem; cursor: pointer; }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
-.alert { padding: 0.75rem; border-radius: 6px; margin-top: 1rem; }
-.alert-title { font-weight: 600; margin-bottom: 0.15rem; }
-.alert-meta { font-size: 0.85rem; color: #4d4d4d; }
-.alert.success { background: #e6f4ea; border: 1px solid #6cc178; }
-.alert.error { background: #fdecea; border: 1px solid #f05b5b; white-space: pre-wrap; }
-.alert.success .alert-meta { color: #2d6a4f; }
-.alert.error .alert-meta { color: #7a2d2d; }
-.checkbox-inline { display: flex; align-items: center; gap: 0.5rem; }
-.info-card { display: flex; gap: 0.75rem; align-items: center; padding: 0.75rem; border: 1px solid #e0e0e0; border-radius: 8px; margin-top: 0.5rem; }
-.info-card img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; background: #f2f2f2; }
+:root {
+  color-scheme: dark;
+  --bg-main: #050816;
+  --bg-card: #0d1425;
+  --bg-card-alt: #131d36;
+  --border: rgba(255,255,255,0.08);
+  --text-primary: #f5f7ff;
+  --text-secondary: #94a3d7;
+  --accent: #37ff8b;
+  --accent-secondary: #58c7ff;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Inter", "SF Pro Display", "Roboto", -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg-main);
+  color: var(--text-primary);
+  min-height: 100vh;
+  padding: 28px 18px 48px;
+  display: flex;
+  justify-content: center;
+}
+.wrapper {
+  width: min(1120px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 28px;
+  box-shadow: 0 18px 46px rgba(4, 10, 25, 0.6);
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.brand-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  object-fit: cover;
+  background: #0c1428;
+  box-shadow: 0 0 26px rgba(55, 255, 139, 0.4);
+}
+.brand h1 {
+  margin: 0;
+  font-size: clamp(1.4rem, 3vw, 1.8rem);
+  letter-spacing: 0.02em;
+}
+.brand-actions {
+  margin-top: 0.4rem;
+}
+.help-link {
+  color: var(--accent);
+  background: rgba(55, 255, 139, 0.12);
+  border: 1px solid rgba(55, 255, 139, 0.35);
+  padding: 0.48rem 1.1rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.25s ease;
+}
+.help-link:hover { transform: translateY(-1px); box-shadow: 0 8px 18px rgba(55,255,139,0.25); }
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.3rem;
+  margin-top: 1.5rem;
+}
+.label-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.label-block span {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+input[type="text"], input[type="file"] {
+  background: var(--bg-card-alt);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  color: var(--text-primary);
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+input[type="text"]:focus,
+input[type="file"]:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(55,255,139,0.35), 0 10px 24px rgba(55,255,139,0.15);
+}
+.chat-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(88,199,255,0.15);
+  border: 1px solid rgba(88,199,255,0.35);
+  color: var(--accent-secondary);
+  font-size: 0.85rem;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+.chat-link svg { width: 16px; height: 16px; }
+.chat-link:hover { background: rgba(88,199,255,0.25); }
+.checkbox-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+.checkbox-inline input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+#status-row {
+  font-size: 0.97rem;
+  min-height: 1.3rem;
+  color: var(--text-secondary);
+}
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.2rem;
+}
+.info-card {
+  display: flex;
+  gap: 1rem;
+  padding: 1.05rem;
+  border-radius: 16px;
+  background: var(--bg-card-alt);
+  border: 1px solid rgba(255,255,255,0.06);
+  align-items: center;
+}
 .info-card.hidden { display: none; }
-.info-card .meta { display: flex; flex-direction: column; }
-#status-row { font-size: 0.95rem; color: #555; min-height: 1.2rem; }
-.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
-.modal { position: fixed; inset: 0; display: flex; justify-content: center; align-items: flex-start; padding: 4rem 1rem; opacity: 0; pointer-events: none; transition: opacity 0.2s ease; }
-.modal-content { max-width: 640px; width: 100%; background: #fff; border-radius: 12px; box-shadow: 0 10px 35px rgba(15,23,42,0.25); padding: 1.5rem; position: relative; color: #111; line-height: 1.5; }
-.modal-header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
-.modal-header svg { width: 28px; height: 28px; color: #0a66c2; flex-shrink: 0; }
-.modal-close { position: absolute; top: 0.75rem; right: 0.75rem; border: none; background: none; font-size: 1.5rem; cursor: pointer; }
-.modal ol { padding-left: 1.25rem; margin: 1rem 0; }
-.modal ol li + li { margin-top: 0.5rem; }
-.modal-visible .modal-backdrop,
-.modal-visible .modal { opacity: 1; pointer-events: auto; }
-.modal-hidden { display: none; }
-footer { margin: 2rem 0 1rem; padding-top: 1rem; border-top: 1px solid #e4e4e7; font-size: 0.95rem; color: #52525b; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; align-items: center; }
-footer a { color: #0a66c2; text-decoration: none; }
-footer a:hover { text-decoration: underline; }
+.info-card img {
+  width: 58px;
+  height: 58px;
+  border-radius: 16px;
+  object-fit: cover;
+  background: #050816;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+}
+.info-card .meta strong { font-size: 1.02rem; }
+.info-card .meta span { font-size: 0.9rem; color: var(--text-secondary); }
+button[type="submit"] {
+  background: linear-gradient(140deg, #37ff8b, #1fc2ff);
+  border: none;
+  color: #04142c;
+  font-weight: 600;
+  padding: 1rem;
+  border-radius: 16px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.2s ease;
+}
+button[type="submit"]:disabled { opacity: 0.35; cursor: not-allowed; }
+button[type="submit"]:not(:disabled):hover { transform: translateY(-1px); }
+#alert-anchor { margin-top: 1.6rem; }
+.alert {
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(7, 15, 36, 0.92);
+  padding: 1.1rem 1.3rem;
+}
+.alert-title { font-weight: 600; font-size: 1rem; }
+.alert-meta { font-size: 0.88rem; color: var(--text-secondary); margin-top: 0.35rem; }
+.alert.success { border-color: rgba(55,255,139,0.45); background: rgba(7,38,24,0.92); }
+.alert.error { border-color: rgba(255,106,106,0.45); background: rgba(32,11,18,0.92); }
+
+footer {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 20px 26px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.1rem;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-secondary);
+}
+footer a { color: var(--text-primary); text-decoration: none; font-size: 0.95rem; }
+footer a:hover { color: var(--accent); }
 .footer-links { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
-.github-link { display: inline-flex; align-items: center; gap: 0.35rem; }
+.github-link { display: inline-flex; align-items: center; gap: 0.45rem; }
 .github-link svg { width: 18px; height: 18px; fill: currentColor; }
+
+/* Modal */
+#modal-root.modal-hidden { display: none; }
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2,5,14,0.75);
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 90;
+}
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 100;
+}
+.modal-visible .modal-backdrop,
+.modal-visible .modal {
+  opacity: 1;
+  pointer-events: auto;
+}
+.modal-content {
+  width: min(640px, 95vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #0a1328;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  padding: 1.6rem;
+  box-shadow: 0 30px 70px rgba(3,7,18,0.7);
+  position: relative;
+  color: var(--text-primary);
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+.modal-header svg { width: 28px; height: 28px; color: var(--accent-secondary); flex-shrink: 0; }
+.modal-close {
+  position: absolute;
+  top: 0.8rem;
+  right: 0.8rem;
+  border: none;
+  background: none;
+  font-size: 1.5rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.modal-content ol { padding-left: 1.4rem; margin: 1rem 0; }
+.modal-content li { margin-bottom: 0.5rem; color: var(--text-secondary); }
+.modal-content strong { color: var(--text-primary); }
+.modal-content a { color: var(--accent-secondary); }
+
+/* Responsive */
+@media (max-width: 768px) {
+  body { padding: 22px 14px 36px; }
+  .card { padding: 24px; }
+  form { gap: 1.15rem; }
+  .info-grid { grid-template-columns: 1fr; }
+}
+@media (max-width: 520px) {
+  .card { padding: 20px; }
+  .brand { flex-direction: column; align-items: flex-start; }
+  .brand-icon { width: 56px; height: 56px; }
+  .checkbox-inline { flex-direction: column; align-items: flex-start; }
+  footer { flex-direction: column; align-items: flex-start; }
+}
 </style>
 </head>
 <body>
+<div class="wrapper">
+<div class="card">
 <div class="brand">
 {{brand_icon}}
+<div>
 <h1>{{app_title}}</h1>
-</div>
-<h3>Создание красивых постов в Telegram с использованием Markdown и HTML.</h3>
 <div class="brand-actions">
-<button type="button" id="open-help" class="help-link"><b>Инструкция по использованию</b></button>
+<button type="button" id="open-help" class="help-link">Инструкция по использованию</button>
 </div>
-<p>Укажите токен бота и chat_id — если бот может постить, кнопка станет активной.</p>
+</div>
+</div>
+<p style="margin:1.2rem 0 0;color:var(--text-secondary);">Загрузите Markdown/HTML или укажите ссылку на Markdown/HTML файл (поддерживается GitHub README.md). 
+  Укажите токен бота и chat_id. После проверки создайте красивый пост.</p>
 <form id="publisher-form" action="/publish" method="post" enctype="multipart/form-data">
-<label>Bot API Key:
+<label class="label-block">
+<span>Bot API Key</span>
 <input type="text" name="bot_token" id="bot-token" required />
 </label>
-<label>Chat ID:
-<div style="display:flex;gap:0.5rem;align-items:center;">
+<label class="label-block">
+<span>Chat ID</span>
+<div style="display:flex;gap:0.6rem;align-items:center;flex-wrap:wrap;">
 <input type="text" name="chat_id" id="chat-id" required />
-<a href="https://t.me/re_GetMyIDBot" target="_blank" rel="noopener noreferrer">узнать chat id</a>
+<a class="chat-link" href="https://t.me/re_GetMyIDBot" target="_blank" rel="noopener noreferrer">
+<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+<path d="m21 3-9 9"></path>
+<path d="M21 3 14 21l-3-7-7-3 17-8Z"></path>
+</svg>
+узнать chat id
+</a>
 </div>
 </label>
 <label class="checkbox-inline">
 <input type="checkbox" id="remember-creds" />
-Сохранять токен и chat_id на этом устройстве
+<span>Сохранять токен и chat_id на этом устройстве</span>
 </label>
 <div id="status-row"></div>
+<div class="info-grid">
 <div id="bot-card" class="info-card hidden">
 <img id="bot-avatar" alt="Bot avatar" />
 <div class="meta">
@@ -86,15 +338,36 @@ footer a:hover { text-decoration: underline; }
 <span id="chat-type"></span>
 </div>
 </div>
-<label>Загрузить файл (.md или .html):
+</div>
+<label class="label-block">
+<span>Файл (.md / .html)</span>
 <input type="file" name="content_file" accept=".md,.markdown,.html,.htm" />
 </label>
-<label>GitHub README.md или прямой URL:
+<label class="label-block">
+<span>Ссылка на Markdown/HTML</span>
 <input type="text" name="source_url" placeholder="https://github.com/user/repo/blob/main/README.md" />
 </label>
 <button type="submit" id="submit-btn" disabled>Создать пост</button>
 </form>
+<div id="alert-anchor">
 {{message_block}}
+</div>
+</div>
+
+<footer>
+<span>© {{app_title}}</span>
+<div class="footer-links">
+<a href="https://vakarian.website" target="_blank" rel="noopener noreferrer">vakarian.website</a>
+<a class="github-link" href="https://github.com/vakarianplay/telegram_bots/tree/main/PyTelegramRichPost" target="_blank" rel="noopener noreferrer">
+<svg viewBox="0 0 24 24" aria-hidden="true">
+<path d="M12 .5C5.65.5.5 5.65.5 12c0 5.09 3.29 9.4 7.86 10.94.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.53-1.36-1.3-1.73-1.3-1.73-1.06-.73.08-.72.08-.72 1.17.08 1.78 1.21 1.78 1.21 1.04 1.78 2.73 1.27 3.4.97.11-.76.41-1.27.74-1.56-2.55-.29-5.23-1.28-5.23-5.71 0-1.26.45-2.29 1.2-3.1-.12-.29-.52-1.45.11-3.03 0 0 .98-.31 3.2 1.18a11.1 11.1 0 0 1 5.83 0c2.21-1.49 3.19-1.18 3.19-1.18.64 1.58.24 2.74.12 3.03.75.81 1.2 1.84 1.2 3.1 0 4.44-2.69 5.41-5.25 5.7.42.36.8 1.06.8 2.14 0 1.55-.01 2.8-.01 3.18 0 .32.21.69.8.57A10.51 10.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"></path>
+</svg>
+GitHub
+</a>
+<a href="https://github.com/vakarianplay/telegram_bots/tree/main/PyTelegramRichPost/deploy.md" target="_blank" rel="noopener noreferrer">Инструкция по развёртыванию</a>
+</div>
+</footer>
+</div>
 
 <div id="modal-root" class="modal-hidden">
 <div class="modal-backdrop"></div>
@@ -113,20 +386,6 @@ footer a:hover { text-decoration: underline; }
 </div>
 </div>
 </div>
-
-<footer>
-<span>© {{app_title}}</span>
-<div class="footer-links">
-<a href="https://vakarian.website" target="_blank" rel="noopener noreferrer">vakarian.website</a>
-<a class="github-link" href="https://github.com/vakarianplay/telegram_bots/tree/main/PyTelegramRichPost" target="_blank" rel="noopener noreferrer">
-<svg viewBox="0 0 24 24" aria-hidden="true">
-<path d="M12 .5C5.65.5.5 5.65.5 12c0 5.09 3.29 9.4 7.86 10.94.58.11.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.53-1.36-1.3-1.73-1.3-1.73-1.06-.73.08-.72.08-.72 1.17.08 1.78 1.21 1.78 1.21 1.04 1.78 2.73 1.27 3.4.97.11-.76.41-1.27.74-1.56-2.55-.29-5.23-1.28-5.23-5.71 0-1.26.45-2.29 1.2-3.1-.12-.29-.52-1.45.11-3.03 0 0 .98-.31 3.2 1.18a11.1 11.1 0 0 1 5.83 0c2.21-1.49 3.19-1.18 3.19-1.18.64 1.58.24 2.74.12 3.03.75.81 1.2 1.84 1.2 3.1 0 4.44-2.69 5.41-5.25 5.7.42.36.8 1.06.8 2.14 0 1.55-.01 2.8-.01 3.18 0 .32.21.69.8.57A10.51 10.51 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"></path>
-</svg>
-GitHub
-</a>
-<a href="https://github.com/vakarianplay/telegram_bots/tree/main/PyTelegramRichPost/deploy.md" target="_blank" rel="noopener noreferrer">Инструкция по развёртыванию</a>
-</div>
-</footer>
 
 <script>
 const tokenInput = document.getElementById('bot-token');
@@ -148,6 +407,7 @@ const chatType = document.getElementById('chat-type');
 const modalRoot = document.getElementById('modal-root');
 const openHelpBtn = document.getElementById('open-help');
 const closeHelpBtn = document.getElementById('close-help');
+const alertAnchor = document.getElementById('alert-anchor');
 
 function loadStored() {
   try {
@@ -174,7 +434,7 @@ function storeCreds() {
 
 function setStatus(text, ok = false) {
   statusRow.textContent = text || '';
-  statusRow.style.color = ok ? '#1a7f37' : '#8a2c2c';
+  statusRow.style.color = ok ? '#37ff8b' : '#ff8fa3';
 }
 
 function resetCards() {
@@ -263,11 +523,11 @@ rememberBox.addEventListener('change', () => {
 openHelpBtn.addEventListener('click', openModal);
 closeHelpBtn.addEventListener('click', closeModal);
 modalRoot.addEventListener('click', (event) => {
-  if (event.target === modalRoot || event.target.classList.contains('modal-backdrop')) {
+  if (event.target === modalRoot ||
+      event.target.classList.contains('modal-backdrop')) {
     closeModal();
   }
 });
-
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape' && !modalRoot.classList.contains('modal-hidden')) {
     closeModal();
@@ -277,6 +537,9 @@ document.addEventListener('keydown', (event) => {
 document.addEventListener('DOMContentLoaded', () => {
   loadStored();
   validateCredentials();
+  if (alertAnchor && alertAnchor.textContent.trim().length > 0) {
+    alertAnchor.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
 });
 </script>
 </body>
